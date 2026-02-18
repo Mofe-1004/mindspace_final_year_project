@@ -1,0 +1,44 @@
+{
+  "name": "mental-health-platform",
+  "version": "1.0.0",
+  "description": "Mental Health Sentiment Analysis Platform for Nigerian University Students",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend",
+    "api"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:api": "npm run dev --workspace=api",
+    "build": "npm run build --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspaces --if-present",
+    "type-check": "tsc --noEmit",
+    "install:all": "npm install && npm install --workspaces",
+    "clean": "rm -rf node_modules frontend/node_modules api/node_modules",
+    "vercel-deploy": "vercel --prod"
+  },
+  "keywords": [
+    "mental-health",
+    "sentiment-analysis",
+    "nlp",
+    "nigerian-pidgin",
+    "afriberta",
+    "mentalbert",
+    "supabase",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

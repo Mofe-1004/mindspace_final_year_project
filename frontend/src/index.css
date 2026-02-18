@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* MindSpace colour palette */
+    --background: 36 60% 97%;           /* #FDF9F3 warm cream */
+    --foreground: 280 10% 15%;          /* dark purple-grey */
+    --card: 0 0% 100%;                  /* white */
+    --card-foreground: 280 10% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 280 10% 15%;
+    --primary: 278 29% 45%;             /* #7C5295 purple */
+    --primary-foreground: 0 0% 100%;    /* white */
+    --secondary: 24 70% 70%;            /* #E8A87C warm orange */
+    --secondary-foreground: 280 10% 15%;
+    --muted: 36 30% 93%;                /* slightly darker cream */
+    --muted-foreground: 280 8% 48%;     /* muted purple-grey */
+    --accent: 278 20% 92%;              /* very light purple tint */
+    --accent-foreground: 278 29% 45%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 20% 88%;               /* warm grey border */
+    --input: 36 20% 88%;
+    --ring: 278 29% 45%;
+    --radius: 1rem;                     /* 16px — rounder cards */
+  }
+
+  .dark {
+    --background: 280 20% 8%;
+    --foreground: 36 60% 95%;
+    --card: 280 15% 12%;
+    --card-foreground: 36 60% 95%;
+    --popover: 280 15% 12%;
+    --popover-foreground: 36 60% 95%;
+    --primary: 278 35% 62%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 24 55% 58%;
+    --secondary-foreground: 280 10% 15%;
+    --muted: 280 15% 18%;
+    --muted-foreground: 280 8% 60%;
+    --accent: 278 20% 22%;
+    --accent-foreground: 278 35% 62%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 280 15% 20%;
+    --input: 280 15% 20%;
+    --ring: 278 35% 62%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Sentiment colour utilities */
+.sentiment-positive { color: #7AB88E; }
+.sentiment-neutral  { color: #B8B5C9; }
+.sentiment-negative { color: #D17A7A; }
+
+.risk-low      { color: #7AB88E; }
+.risk-moderate { color: #E8A87C; }
+.risk-high     { color: #D17A7A; }
+
+/* Loading spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin { animation: spin 1s linear infinite; }

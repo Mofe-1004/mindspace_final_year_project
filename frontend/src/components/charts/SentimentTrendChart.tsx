@@ -69,7 +69,7 @@ export default function SentimentTrendChart({ submissions }: SentimentTrendChart
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+      <LineChart data={chartData} margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis
           dataKey="date"
@@ -80,6 +80,12 @@ export default function SentimentTrendChart({ submissions }: SentimentTrendChart
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
           allowDecimals={false}
+          label={{
+            value: 'Number of Entries',
+            angle: -90,
+            position: 'insideLeft',
+            style: { textAnchor: 'middle', fontSize: 12, fill: 'hsl(var(--muted-foreground))' },
+          }}
         />
         <Tooltip
           contentStyle={{
@@ -87,6 +93,8 @@ export default function SentimentTrendChart({ submissions }: SentimentTrendChart
             border: '1px solid hsl(var(--border))',
             borderRadius: '8px',
           }}
+          formatter={(value: number, name: string) => [`${value} ${value === 1 ? 'entry' : 'entries'}`, name]}
+          labelFormatter={(label: string) => `Date: ${label}`}
         />
         <Legend />
         <Line

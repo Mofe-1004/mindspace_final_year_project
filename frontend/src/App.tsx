@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import CounselorDashboard from './pages/CounselorDashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import AwaitingApproval from './pages/AwaitingApproval'
 import RoleBasedRoute from './components/RoleBasedRoute'
 
@@ -32,6 +33,8 @@ function HomeRedirect() {
 
   // Redirect based on role
   switch (role) {
+    case UserRole.ADMIN:
+      return <Navigate to="/admin" replace />
     case UserRole.COUNSELOR:
       return <Navigate to="/counselor" replace />
     case UserRole.PENDING_COUNSELOR:
@@ -78,6 +81,16 @@ function App() {
         element={
           <RoleBasedRoute allowedRoles={[UserRole.COUNSELOR]}>
             <CounselorDashboard />
+          </RoleBasedRoute>
+        }
+      />
+
+      {/* Admin Dashboard */}
+      <Route
+        path="/admin"
+        element={
+          <RoleBasedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminDashboard />
           </RoleBasedRoute>
         }
       />

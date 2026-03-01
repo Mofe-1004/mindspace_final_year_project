@@ -16,7 +16,7 @@ import { Language } from '../../types/shared';
  * Common Nigerian Pidgin words and phrases
  * These are distinctive markers that indicate Pidgin usage
  */
-const PIDGIN_MARKERS = [
+export const PIDGIN_MARKERS = [
   // Common Pidgin words
   'dey', 'wetin', 'wahala', 'abi', 'sha', 'shey', 'sef', 'abeg',
   'na', 'dem', 'una', 'wey', 'sabi', 'no be', 'e don', 'im',

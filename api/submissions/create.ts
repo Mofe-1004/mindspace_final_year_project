@@ -21,6 +21,8 @@ import { z } from 'zod';
 import { analyzeText } from '../lib/ml-service';
 import { generateResponsePackage } from '../lib/response-generator';
 import { selectVerse } from '../lib/verse-selector';
+import { validateTextQuality } from '../lib/gibberish-detector';
+import { createAtRiskAlert } from '../lib/alert-service';
 import {
   CreateSubmissionResponse,
   ApiResponse,
@@ -64,13 +66,11 @@ async function validateToken(
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('Token validation error:', error);
       return null;
     }
 
     return { userId: user.id, email: user.email || '' };
-  } catch (error) {
-    console.error('Token validation exception:', error);
+  } catch {
     return null;
   }
 }
@@ -107,11 +107,9 @@ async function ensureStudentExists(userId: string, email: string): Promise<boole
     });
 
   if (insertError) {
-    console.error('Error creating student record:', insertError);
     return false;
   }
 
-  console.log('Created new student record for:', email);
   return true;
 }
 
@@ -151,8 +149,6 @@ export default async function handler(
     return;
   }
 
-  const startTime = Date.now();
-
   try {
     // Step 1: Validate authentication
     const auth = await validateToken(req.headers.authorization);
@@ -164,7 +160,6 @@ export default async function handler(
     // Step 1.5: Ensure student record exists (creates if first-time user)
     const studentExists = await ensureStudentExists(auth.userId, auth.email);
     if (!studentExists) {
-      console.error('Failed to ensure student exists');
       sendError(res, 500, ErrorCode.DATABASE_ERROR, 'Failed to create user profile');
       return;
     }
@@ -185,15 +180,15 @@ export default async function handler(
 
     const { text } = parseResult.data;
 
+    // Step 2.5: Validate text quality (reject gibberish before expensive ML)
+    const quality = validateTextQuality(text);
+    if (!quality.valid) {
+      sendError(res, 400, ErrorCode.GIBBERISH_DETECTED, quality.reason);
+      return;
+    }
+
     // Step 3: Analyze text with ML service
-    console.log('Starting ML analysis...');
     const mlResult = await analyzeText(text);
-    console.log('ML analysis complete:', {
-      sentiment: mlResult.sentiment,
-      risk_level: mlResult.risk_level,
-      confidence: mlResult.confidence,
-      language: mlResult.language_detected,
-    });
 
     // Step 4: Generate empathetic response
     const responsePackage = generateResponsePackage(
@@ -203,7 +198,7 @@ export default async function handler(
     );
 
     // Step 5: Select Bible verse
-    const verse = await selectVerse(mlResult.sentiment, mlResult.risk_level);
+    const verse = await selectVerse(mlResult.sentiment, mlResult.risk_level, mlResult.dominant_emotion, mlResult.has_concern_language, mlResult.concern_type, text);
 
     // Step 6: Save to database
     const { data: submission, error: dbError } = await supabase
@@ -224,15 +219,21 @@ export default async function handler(
       .single();
 
     if (dbError) {
-      console.error('Database error:', dbError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
 
-    // Step 7: Build and return response
-    const elapsed = Date.now() - startTime;
-    console.log(`Total request time: ${elapsed}ms`);
+    // Step 6.5: Create at-risk alert for HIGH risk only (fire-and-forget)
+    // Moderate risk still shows counselor suggestion on the result page, but doesn't alert counselors
+    if (mlResult.risk_level === 'high') {
+      createAtRiskAlert({
+        studentId: auth.userId,
+        submissionId: submission.id,
+        riskLevel: 'high',
+      }).catch(() => { /* fire-and-forget */ });
+    }
 
+    // Step 7: Build and return response
     const response: ApiResponse<CreateSubmissionResponse> = {
       success: true,
       data: {
@@ -256,15 +257,8 @@ export default async function handler(
       res.setHeader('X-Follow-Up-Suggestion', responsePackage.followUpSuggestion);
     }
 
-    // Warn if approaching timeout
-    if (elapsed > 4000) {
-      console.warn(`Request took ${elapsed}ms - approaching 5s limit`);
-    }
-
     res.status(201).json(response);
   } catch (error) {
-    console.error('Unexpected error in submission handler:', error);
-
     // Check if it's a timeout-related error
     if (error instanceof Error && error.message.includes('timeout')) {
       sendError(res, 503, ErrorCode.ML_SERVICE_TIMEOUT);

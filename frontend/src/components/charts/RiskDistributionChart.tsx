@@ -49,17 +49,29 @@ export default function RiskDistributionChart({
 
   return (
     <ResponsiveContainer width="100%" height={300}>
-      <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+      <BarChart data={data} margin={{ top: 20, right: 30, left: 30, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis
           dataKey="name"
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
+          label={{
+            value: 'Risk Level',
+            position: 'insideBottom',
+            offset: -2,
+            style: { fontSize: 12, fill: 'hsl(var(--muted-foreground))' },
+          }}
         />
         <YAxis
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
           allowDecimals={false}
+          label={{
+            value: 'Number of Submissions',
+            angle: -90,
+            position: 'insideLeft',
+            style: { textAnchor: 'middle', fontSize: 12, fill: 'hsl(var(--muted-foreground))' },
+          }}
         />
         <Tooltip
           formatter={(value: number) => [

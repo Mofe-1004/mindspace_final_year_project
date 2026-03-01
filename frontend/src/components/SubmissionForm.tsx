@@ -12,16 +12,13 @@
  */
 
 import { useState } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Heart } from 'lucide-react'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { Alert, AlertDescription } from './ui/alert'
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from './ui/card'
 import { useAuth } from '../lib/AuthContext'
 import { CreateSubmissionResponse } from '../../../types/shared'
@@ -39,7 +36,7 @@ const PLACEHOLDERS = [
 ]
 
 interface SubmissionFormProps {
-  onSubmitSuccess: (result: CreateSubmissionResponse) => void
+  onSubmitSuccess: (result: CreateSubmissionResponse, submittedText: string) => void
 }
 
 export default function SubmissionForm({ onSubmitSuccess }: SubmissionFormProps) {
@@ -89,14 +86,14 @@ export default function SubmissionForm({ onSubmitSuccess }: SubmissionFormProps)
       }
 
       if (data.success && data.data) {
-        // Clear the form and notify parent
+        // Capture text before clearing, then notify parent
+        const submittedText = text
         setText('')
-        onSubmitSuccess(data.data)
+        onSubmitSuccess(data.data, submittedText)
       } else {
         throw new Error('Unexpected response format')
       }
     } catch (err) {
-      console.error('Submission error:', err)
       setError(
         err instanceof Error
           ? err.message
@@ -108,75 +105,82 @@ export default function SubmissionForm({ onSubmitSuccess }: SubmissionFormProps)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>How are you feeling today?</CardTitle>
-        <CardDescription>
-          Share your thoughts in English or Nigerian Pidgin. Everything you share is private.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Text Input */}
-          <div className="space-y-2">
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={placeholder}
-              disabled={isSubmitting}
-              className="min-h-[150px] rounded-2xl border-2 bg-background/60 focus:border-primary resize-none"
-              maxLength={MAX_LENGTH + 100} // Allow slight overflow for UX, validate on submit
-            />
+    <div className="space-y-4">
+      {/* Header area */}
+      <div className="text-center mb-2">
+        <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-secondary mb-3">
+          <Heart className="h-6 w-6 text-white" />
+        </div>
+        <h2 className="font-display italic text-xl text-foreground">How are you feeling?</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Share in English or Pidgin — everything stays private.
+        </p>
+      </div>
 
-            {/* Character Count */}
-            <div className="flex justify-between items-center text-sm">
-              <span className={getCharCountColor()}>
-                {charCount} / {MAX_LENGTH} characters
-                {charCount > 0 && charCount < MIN_LENGTH && (
-                  <span className="ml-2">
-                    (minimum {MIN_LENGTH})
-                  </span>
+      <Card className="border-border/50 shadow-sm">
+        <CardContent className="pt-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Text Input */}
+            <div className="space-y-2">
+              <Textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={placeholder}
+                disabled={isSubmitting}
+                className="min-h-[160px] rounded-2xl border-2 border-border/60 bg-muted/30 focus:border-primary focus:bg-background resize-none transition-colors text-base leading-relaxed"
+                maxLength={MAX_LENGTH + 100}
+              />
+
+              {/* Character Count */}
+              <div className="flex justify-between items-center text-sm px-1">
+                <span className={getCharCountColor()}>
+                  {charCount} / {MAX_LENGTH}
+                  {charCount > 0 && charCount < MIN_LENGTH && (
+                    <span className="ml-1.5 text-xs">
+                      (min {MIN_LENGTH})
+                    </span>
+                  )}
+                </span>
+                {charCount >= MIN_LENGTH && charCount <= MAX_LENGTH && (
+                  <span className="text-green-600 text-xs font-medium">Ready</span>
                 )}
-              </span>
-              {charCount >= MIN_LENGTH && charCount <= MAX_LENGTH && (
-                <span className="text-green-600 text-xs">Ready to submit</span>
-              )}
+              </div>
             </div>
-          </div>
 
-          {/* Error Alert */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={!canSubmit}
-            className="w-full rounded-full bg-gradient-to-r from-primary to-secondary text-white border-0 hover:opacity-90 py-6 text-base font-medium"
-            size="lg"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing your feelings...
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                Share & Get Support
-              </>
+            {/* Error Alert */}
+            {error && (
+              <Alert variant="destructive" className="rounded-xl">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-          </Button>
 
-          {/* Privacy Note */}
-          <p className="text-xs text-center text-muted-foreground">
-            Your submission is private and encrypted. You can delete it anytime.
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full rounded-full bg-gradient-to-r from-primary to-secondary text-white border-0 hover:opacity-90 py-6 text-base font-medium shadow-lg shadow-primary/20 disabled:shadow-none transition-shadow"
+              size="lg"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Analyzing your feelings...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Share & Get Support
+                </>
+              )}
+            </Button>
+
+            {/* Privacy Note */}
+            <p className="text-xs text-center text-muted-foreground">
+              Your submission is private and encrypted. You can delete it anytime.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

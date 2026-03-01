@@ -3,7 +3,7 @@
  * Used in Counselor Dashboard for aggregate view
  */
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Label } from 'recharts'
 
 interface SentimentPieChartProps {
   positive: number
@@ -50,14 +50,22 @@ export default function SentimentPieChart({
           paddingAngle={2}
           dataKey="value"
           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          labelLine={false}
+          labelLine={true}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
           ))}
+          <Label
+            value={`${total} total`}
+            position="center"
+            style={{ fontSize: 14, fontWeight: 600, fill: 'hsl(var(--foreground))' }}
+          />
         </Pie>
         <Tooltip
-          formatter={(value: number) => [`${value} submissions`, '']}
+          formatter={(value: number, name: string) => [
+            `${value} submissions (${((value / total) * 100).toFixed(1)}%)`,
+            name,
+          ]}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',

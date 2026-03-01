@@ -31,6 +31,7 @@ export enum UserRole {
   STUDENT = 'student',
   PENDING_COUNSELOR = 'pending_counselor',
   COUNSELOR = 'counselor',
+  ADMIN = 'admin',
 }
 
 export enum CounselorRequestStatus {
@@ -43,6 +44,8 @@ export enum BibleVerseSentimentMatch {
   POSITIVE = 'positive',
   NEGATIVE_ANXIOUS = 'negative_anxious',
   NEGATIVE_SAD = 'negative_sad',
+  NEGATIVE_ANGRY = 'negative_angry',
+  NEGATIVE_STRUGGLE = 'negative_struggle',
   NEUTRAL_ENCOURAGEMENT = 'neutral_encouragement',
   AT_RISK = 'at_risk',
 }
@@ -262,18 +265,25 @@ export interface CreateSubmissionResponse {
 
 export interface SubmissionHistoryItem {
   id: string;
+  text: string; // The student's original entry text
   sentiment: Sentiment;
   risk_level: RiskLevel;
   dominant_emotion: string | null; // Top emotion from GoEmotions
   confidence: number;
+  empathetic_message: string | null; // The response they received
+  bible_verse_reference: string | null;
+  bible_verse_text: string | null;
   created_at: string; // ISO timestamp
-  // Note: text_encrypted is NOT returned for privacy
 }
 
 export interface GetSubmissionHistoryResponse {
   submissions: SubmissionHistoryItem[];
   total_count: number;
   has_more: boolean;
+}
+
+export interface DeleteSubmissionResponse {
+  deleted_id: string;
 }
 
 // Trends API Responses (Counselor)
@@ -348,6 +358,129 @@ export interface ApproveCounselorResponse {
   message: string;
 }
 
+// Admin API Types
+export interface AdminUserItem {
+  id: string;
+  email: string;
+  role: UserRole;
+  school_domain: string;
+  created_at: string;
+  last_active: string | null;
+}
+
+export interface GetAdminUsersResponse {
+  users: AdminUserItem[];
+  total_count: number;
+}
+
+export interface UpdateUserRoleRequest {
+  user_id: string;
+  role: UserRole;
+}
+
+export interface UpdateUserRoleResponse {
+  message: string;
+  user_id: string;
+  new_role: UserRole;
+}
+
+// Assignments API Types
+export interface CounselorStudentAssignment {
+  id: string;
+  counselor_id: string;
+  student_id: string;
+  assigned_by: string;
+  assigned_at: string;
+  status: 'active' | 'inactive';
+}
+
+export interface AssignmentWithDetails {
+  id: string;
+  counselor_id: string;
+  counselor_email: string;
+  student_id: string;
+  student_email: string;
+  assigned_by: string;
+  assigned_at: string;
+  status: 'active' | 'inactive';
+}
+
+export interface CreateAssignmentRequest {
+  counselor_id: string;
+  student_ids: string[];
+}
+
+export interface CreateAssignmentResponse {
+  created: number;
+  skipped: number;
+  message: string;
+}
+
+export interface GetAssignmentsResponse {
+  assignments: AssignmentWithDetails[];
+  total_count: number;
+}
+
+export interface AssignedStudentInfo {
+  id: string;
+  email: string;
+  last_active: string | null;
+  total_submissions: number;
+  latest_sentiment: string | null;
+  latest_risk_level: string | null;
+}
+
+export interface MyStudentsTrendsResponse {
+  daily_summary: {
+    date: string;
+    positive_count: number;
+    neutral_count: number;
+    negative_count: number;
+    low_risk_count: number;
+    moderate_risk_count: number;
+    high_risk_count: number;
+    total_submissions: number;
+  }[];
+  assigned_students: AssignedStudentInfo[];
+  total_assigned_students: number;
+}
+
+export interface AdminStatsResponse {
+  total_students: number;
+  total_counselors: number;
+  total_pending_counselors: number;
+  total_submissions: number;
+  high_risk_submissions: number;
+  submissions_last_7_days: number;
+  submissions_last_30_days: number;
+}
+
+// Alert API Types
+export interface AtRiskAlert {
+  id: string;
+  student_id: string;
+  counselor_id: string | null;
+  submission_id: string | null;
+  risk_level: 'moderate' | 'high';
+  status: 'pending' | 'acknowledged' | 'resolved';
+  triggered_at: string;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  resolution_notes: string | null;
+}
+
+export interface AlertWithDetails extends AtRiskAlert {
+  student_email: string;
+  counselor_email: string | null;
+  submission_text: string | null;  // The flagged entry text (only for assigned counselors)
+}
+
+export interface GetAlertsResponse {
+  alerts: AlertWithDetails[];
+  total_count: number;
+  pending_count: number;
+}
+
 // ====================================================================================
 // ML SERVICE TYPES
 // ====================================================================================
@@ -372,6 +505,8 @@ export interface MLAnalysisResult {
   language_detected: Language;
   afriberta_score: number;
   mentalbert_score: number;
+  has_concern_language?: boolean; // true if addiction/abuse/neglect phrases detected
+  concern_type?: 'substance_abuse' | 'abuse' | 'eating_disorder' | 'isolation' | null; // specific concern for AI verse matching
 }
 
 // ====================================================================================
@@ -432,23 +567,41 @@ export type BibleVerseCategory =
   | 'positive'
   | 'negative_anxious'
   | 'negative_sad'
+  | 'negative_angry'
+  | 'negative_struggle'
   | 'neutral_encouragement'
   | 'at_risk';
 
-// Determine Bible verse category based on sentiment + risk level
+// Emotions that indicate anger/conflict (from GoEmotions labels)
+const ANGRY_EMOTIONS = ['anger', 'annoyance', 'disapproval', 'disgust'];
+
+// Determine Bible verse category based on sentiment, risk level, dominant emotion,
+// and whether concern language (addiction, abuse, etc.) was detected.
 export function getBibleVerseCategory(
   sentiment: Sentiment,
-  risk_level: RiskLevel
+  risk_level: RiskLevel,
+  dominantEmotion?: string,
+  hasConcernLanguage?: boolean
 ): BibleVerseCategory {
   if (risk_level === RiskLevel.HIGH) {
     return 'at_risk';
   }
 
-  if (sentiment === Sentiment.NEGATIVE && risk_level === RiskLevel.MODERATE) {
-    return 'negative_anxious';
+  // Concern language (addiction, abuse, eating disorders) → deliverance/freedom verses
+  if (hasConcernLanguage) {
+    return 'negative_struggle';
+  }
+
+  // Angry emotions get anger-specific verses regardless of sentiment classification
+  // (ML models sometimes classify anger as "neutral" sentiment, e.g. "I hate my father")
+  if (dominantEmotion && ANGRY_EMOTIONS.includes(dominantEmotion.toLowerCase())) {
+    return 'negative_angry';
   }
 
   if (sentiment === Sentiment.NEGATIVE) {
+    if (risk_level === RiskLevel.MODERATE) {
+      return 'negative_anxious';
+    }
     return 'negative_sad';
   }
 
@@ -538,6 +691,7 @@ export enum ErrorCode {
   // Submission errors
   TEXT_TOO_SHORT = 'TEXT_TOO_SHORT',
   TEXT_TOO_LONG = 'TEXT_TOO_LONG',
+  GIBBERISH_DETECTED = 'GIBBERISH_DETECTED',
   ML_SERVICE_TIMEOUT = 'ML_SERVICE_TIMEOUT',
   ML_SERVICE_ERROR = 'ML_SERVICE_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
@@ -565,6 +719,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.UNAUTHORIZED]: 'You must be logged in to access this resource.',
   [ErrorCode.TEXT_TOO_SHORT]: 'Please enter at least 10 characters.',
   [ErrorCode.TEXT_TOO_LONG]: 'Text is too long. Maximum 2000 characters.',
+  [ErrorCode.GIBBERISH_DETECTED]: 'Please enter a meaningful reflection about your day or feelings.',
   [ErrorCode.ML_SERVICE_TIMEOUT]: "We're having trouble processing your submission. Please try again.",
   [ErrorCode.ML_SERVICE_ERROR]: 'Unable to analyze your submission right now. Please try again later.',
   [ErrorCode.RATE_LIMIT_EXCEEDED]: 'Too many submissions. Please wait a moment before trying again.',

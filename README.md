@@ -1,91 +1,162 @@
-# Mental Health Sentiment Analysis Platform
+# MindSpace - Mental Health Sentiment Analysis Platform
 
 A web-based NLP sentiment analysis platform designed for Nigerian university students to track their emotional wellbeing through text submissions in English and Nigerian Pidgin.
 
-## 🎯 Project Overview
+## Project Overview
 
-**Core Purpose:** Provide empathetic, non-diagnostic emotional reflection and support for university students, with optional counselor oversight for institutional mental health awareness.
+**Core Purpose:** Provide empathetic, non-diagnostic emotional reflection and support for university students, with counselor oversight and admin management for institutional mental health awareness.
 
 **Target Users:**
 - University students (primary users)
-- Registered counselors (administrative/monitoring access)
+- Registered counselors (monitoring + student support)
+- Administrators (system management + user oversight)
 
 ### Key Features
 
 **For Students:**
 - Submit text entries about their day/feelings in English or Nigerian Pidgin
-- Receive empathetic reflection (non-diagnostic)
+- Receive empathetic reflection (non-diagnostic) with dominant emotion label
 - Get categorized into emotional states (positive, neutral, negative, at-risk)
-- Receive Bible verse encouragement
-- View personal emotional trends over time
-- Optional counselor contact request
+- Receive AI-matched Bible verse encouragement (powered by Claude Haiku)
+- View personal emotional trends over time (line charts)
+- Optional counselor contact suggestion (for moderate/high risk)
 - Complete data deletion capability
 
 **For Counselors:**
-- View anonymized aggregate reports of student mental health trends
+- View anonymized aggregate reports of assigned students' mental health trends
+- Receive automatic high-risk alerts (in-app + email notifications)
+- Acknowledge and resolve at-risk student alerts
 - Access rolling trend data (updates continuously)
-- Gain institutional awareness without accessing individual student identities
+- Approve pending counselor registrations
 
-## 🏗️ Tech Stack
+**For Administrators:**
+- System-wide statistics dashboard (total students, submissions, risk counts)
+- User management (search, filter, change roles)
+- Assign counselors to student groups
+- Monitor all system alerts
+
+## Tech Stack
 
 ### Frontend
 - **React 18** with TypeScript
 - **Vite** for fast development
-- **TailwindCSS** for styling
-- **React Query** for API state management
+- **TailwindCSS + shadcn/ui** for styling
+- **TanStack React Query** for API state management
 - **Recharts** for data visualization
 - **React Hook Form + Zod** for form validation
+- **Lucide React** for icons
 
 ### Backend
 - **Node.js** with TypeScript
-- **Vercel Serverless Functions** for API endpoints
-- **Supabase** for PostgreSQL database, authentication, and real-time features
+- **Vercel Serverless Functions** for API endpoints (production)
+- **Express + tsx** for local dev server
+- **Supabase** for PostgreSQL database, authentication, and RLS
 
 ### ML/NLP
-- **HuggingFace Inference API**
-  - **AfriBERTa** (`Davlan/naija-twitter-sentiment-afriberta-large`) - Nigerian Pidgin sentiment
-  - **MentalBERT** (`mental/mental-bert-base-uncased`) - Mental health risk assessment
+- **HuggingFace Inference API** (free tier)
+  - **Cardiff RoBERTa** (`cardiffnlp/twitter-roberta-base-sentiment-latest`) - Sentiment classification
+  - **GoEmotions** (`SamLowe/roberta-base-go_emotions`) - 28-category emotion detection + risk assessment
+  - **Custom Pidgin Translation Layer** - 100+ phrase mappings for Nigerian Pidgin
+- **Anthropic Claude Haiku** (`claude-haiku-4-5-20251001`) - AI-powered Bible verse matching
 
-### Deployment
+### Infrastructure
 - **Vercel** for frontend and serverless functions
-- **Supabase Cloud** for database hosting
+- **Supabase Cloud** for database + auth
+- **Resend** for email notifications (alert emails to counselors)
 
-## 📁 Project Structure
+**Total hosting cost: $0/month** (all free tiers)
+
+## Project Structure
 
 ```
-mental-health-platform/
-├── api/                           # Serverless functions (backend)
-│   ├── auth/
-│   │   ├── signup.ts             # Student registration
-│   │   └── login.ts              # Authentication
+final_year_project/
+├── api/                              # Backend (Vercel serverless functions)
 │   ├── submissions/
-│   │   ├── create.ts             # Core ML analysis endpoint
-│   │   └── history.ts            # Get student's history
+│   │   ├── create.ts                 # POST - Submit text, ML analysis, alert creation
+│   │   ├── history.ts                # GET  - Fetch submission history
+│   │   └── delete.ts                 # DELETE - Delete a submission
 │   ├── trends/
-│   │   └── aggregate.ts          # Counselor dashboard data
-│   └── user/
-│       └── delete-account.ts     # Complete account deletion
+│   │   └── aggregate.ts              # GET  - Counselor aggregate data
+│   ├── counselors/
+│   │   ├── pending.ts                # GET  - List pending counselor approvals
+│   │   └── approve.ts                # POST - Approve/reject counselor
+│   ├── counselor/
+│   │   ├── my-students.ts            # GET  - Assigned students aggregate trends
+│   │   └── alerts.ts                 # GET/PUT - View and manage at-risk alerts
+│   ├── admin/
+│   │   ├── users.ts                  # GET  - List all users
+│   │   ├── role.ts                   # PUT  - Change user role
+│   │   ├── stats.ts                  # GET  - System-wide statistics
+│   │   ├── assignments.ts            # GET/POST/DELETE - Counselor-student assignments
+│   │   └── alerts.ts                 # GET  - View all system alerts
+│   ├── auth/
+│   │   ├── signup.ts                 # POST - Student/counselor registration
+│   │   └── login.ts                  # POST - Authentication
+│   ├── lib/
+│   │   ├── ml-service.ts             # HuggingFace integration + sentiment/emotion analysis
+│   │   ├── language-detector.ts      # English/Pidgin language detection
+│   │   ├── response-generator.ts     # Empathetic message templates
+│   │   ├── verse-selector.ts         # AI-powered Bible verse matching (Claude Haiku)
+│   │   ├── gibberish-detector.ts     # Rule-based input quality validation
+│   │   ├── alert-service.ts          # At-risk alert creation (fire-and-forget)
+│   │   └── email-service.ts          # Resend email notifications
+│   ├── dev-server.ts                 # Express server for local development
+│   └── package.json                  # Backend dependencies (@anthropic-ai/sdk, resend)
+│
+├── frontend/                          # React application
+│   └── src/
+│       ├── pages/
+│       │   ├── Dashboard.tsx          # Student dashboard (3-tab layout)
+│       │   ├── CounselorDashboard.tsx # Counselor analytics + alerts + my students
+│       │   ├── AdminDashboard.tsx     # Admin dashboard (Overview/Users/Assignments/Alerts)
+│       │   ├── Login.tsx
+│       │   ├── Signup.tsx
+│       │   └── AwaitingApproval.tsx   # Pending counselor approval page
+│       ├── components/
+│       │   ├── SubmissionForm.tsx     # Journal entry input
+│       │   ├── SubmissionResult.tsx   # Analysis result display
+│       │   ├── ProtectedRoute.tsx     # Auth guard
+│       │   ├── RoleBasedRoute.tsx     # Role-based routing (student/counselor/admin)
+│       │   └── charts/               # Recharts visualizations
+│       ├── hooks/                     # React Query data fetching hooks
+│       │   ├── useSubmissionHistory.ts
+│       │   ├── useAggregateTrends.ts
+│       │   ├── usePendingApprovals.ts
+│       │   ├── useAdminData.ts        # Admin users/stats/role hooks
+│       │   ├── useAssignments.ts      # Assignment CRUD hook
+│       │   ├── useMyStudentsTrends.ts # Counselor's assigned students
+│       │   ├── useAlerts.ts           # Alert polling hooks (30s interval)
+│       │   └── useMyCounselor.ts
+│       └── lib/
+│           ├── AuthContext.tsx         # Auth state management
+│           ├── supabase.ts            # Supabase client
+│           └── utils.ts
+│
 ├── database/
-│   └── schema.sql                # PostgreSQL schema with RLS policies
-├── frontend/                      # React application
-│   ├── src/
-│   │   ├── components/           # React components
-│   │   ├── pages/                # Page components
-│   │   └── lib/                  # Utility functions
-│   └── package.json
-├── scripts/
-│   └── seed-bible-verses.ts      # Seed Bible verse database
+│   ├── schema.sql                     # Full PostgreSQL schema with RLS policies
+│   └── migrations/
+│       ├── 003_counselor_approval.sql
+│       ├── 004_admin_role.sql         # Admin role + is_admin() + RLS policies
+│       ├── 005_counselor_student_assignments.sql  # Assignments table
+│       ├── 006_at_risk_alerts.sql     # At-risk alerts table
+│       ├── 007_add_phone_number.sql
+│       └── 008_add_full_name.sql
+│
 ├── types/
-│   └── shared.ts                 # Shared TypeScript types
-├── .env.example                   # Environment variables template
-├── package.json                   # Root package.json
-├── tsconfig.json                  # TypeScript configuration
-├── vite.config.ts                 # Vite bundler configuration
-├── tailwind.config.js             # Tailwind CSS configuration
-└── vercel.json                    # Vercel deployment configuration
+│   └── shared.ts                      # Shared TypeScript types (frontend + backend)
+│
+├── scripts/
+│   └── seed-bible-verses-expanded.sql # 100+ Bible verses across 7 categories
+│
+├── .env.example                       # Environment variables template
+├── package.json                       # Root package.json
+├── tsconfig.json                      # TypeScript configuration
+├── vite.config.ts                     # Vite bundler configuration
+├── tailwind.config.js                 # Tailwind CSS configuration
+└── vercel.json                        # Vercel deployment configuration
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -94,21 +165,21 @@ mental-health-platform/
 - **Supabase account** (free tier)
 - **Vercel account** (free tier)
 - **HuggingFace account** (free tier)
+- **Anthropic account** (optional, for AI verse matching)
+- **Resend account** (optional, for email alerts)
 
 ### 1. Clone the Repository
 
 ```bash
 git clone <your-repo-url>
-cd mental-health-platform
+cd final_year_project
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-npm run install:all
+npm install
 ```
-
-This will install dependencies for the root, frontend, and API workspaces.
 
 ### 3. Set Up Supabase
 
@@ -124,23 +195,23 @@ This will install dependencies for the root, frontend, and API workspaces.
 
 #### Run Database Migrations
 
-1. Go to **SQL Editor** in Supabase dashboard
-2. Open `database/schema.sql` from this project
-3. Copy and paste the entire contents into the SQL Editor
-4. Click **Run** to execute the schema
+Run these SQL files in order in the **Supabase SQL Editor**:
 
-This will create all tables, RLS policies, functions, and seed initial Bible verses.
+1. `database/schema.sql` — Core tables, RLS policies, functions
+2. `database/migrations/003_counselor_approval.sql` — Counselor approval workflow
+3. `database/migrations/004_admin_role.sql` — Admin role + `is_admin()` function
+4. `database/migrations/005_counselor_student_assignments.sql` — Counselor-student assignments
+5. `database/migrations/006_at_risk_alerts.sql` — At-risk alerts table
+6. `database/migrations/007_add_phone_number.sql` — Phone number field
+7. `database/migrations/008_add_full_name.sql` — Full name field
+8. `scripts/seed-bible-verses-expanded.sql` — 100+ Bible verses across 7 categories
 
-#### Set Up Supabase Auth Email Templates
+#### Bootstrap Admin Account
 
-1. Go to **Authentication** → **Email Templates** in Supabase
-2. Customize the **Confirm Signup** template:
+After a user signs up, promote them to admin:
 
-```html
-<h2>Welcome to Mental Health Support Platform</h2>
-<p>Click the link below to verify your school email:</p>
-<a href="{{ .ConfirmationURL }}">Verify Email</a>
-<p>This link expires in 24 hours.</p>
+```sql
+UPDATE public.students SET role = 'admin' WHERE email = 'admin@babcock.edu.ng';
 ```
 
 ### 4. Set Up HuggingFace
@@ -151,8 +222,6 @@ This will create all tables, RLS policies, functions, and seed initial Bible ver
 4. Copy the token (it starts with `hf_...`)
 
 ### 5. Configure Environment Variables
-
-Create a `.env` file in the root directory:
 
 ```bash
 cp .env.example .env
@@ -173,9 +242,14 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 # HuggingFace API Configuration
 HUGGINGFACE_API_TOKEN=hf_your_token_here
 
+# Anthropic API (optional - for AI Bible verse matching)
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Resend Email (optional - for counselor alert emails)
+RESEND_API_KEY=re_your_key_here
+
 # Application Configuration
 NODE_ENV=development
-APP_URL=http://localhost:3000
 ```
 
 ### 6. Run the Development Server
@@ -185,396 +259,195 @@ npm run dev
 ```
 
 This will start:
-- **Frontend**: http://localhost:3000
-- **API**: http://localhost:3000/api/*
-
-The Vite dev server will proxy API requests to your serverless functions.
+- **Frontend**: http://localhost:5173
+- **API**: http://localhost:3001
 
 ### 7. Test the Setup
 
-1. Open http://localhost:3000
-2. Try signing up with a test school email (e.g., `test@unilag.edu.ng`)
+1. Open http://localhost:5173 (use **Incognito mode** to avoid browser extension interference)
+2. Sign up with a school email (e.g., `test@student.babcock.edu.ng`)
 3. Check your email for the verification link
 4. After verifying, log in and submit a test text
+5. Try submitting in Nigerian Pidgin: "I dey feel somehow today, body no dey sweet me"
 
-## 📋 Development Workflow
+## ML/NLP Pipeline
 
-### Running Scripts
+When a student submits text, this pipeline runs in under 5 seconds:
 
-```bash
-# Start development server (frontend + API)
-npm run dev
-
-# Build for production
-npm run build
-
-# Type checking
-npm run type-check
-
-# Lint code
-npm run lint
-
-# Clean all node_modules
-npm run clean
+```
+Student submits text
+    │
+    ├─ 1. INPUT VALIDATION (Gibberish Detection)
+    │     Rule-based checks: min 3 words, character entropy,
+    │     repetition detection, keyboard smash, word whitelist
+    │     (Pidgin markers count as valid words)
+    │
+    ├─ 2. LANGUAGE DETECTION
+    │     Pattern matching for Pidgin markers ("dey", "no wan", etc.)
+    │
+    ├─ 3. PIDGIN TRANSLATION (if detected)
+    │     100+ phrase substitutions, longest-match-first sorting
+    │
+    ├─ 4. PARALLEL ML ANALYSIS
+    │     ├─ Cardiff RoBERTa → sentiment: positive/neutral/negative
+    │     └─ GoEmotions → 28 emotions + risk assessment
+    │
+    ├─ 5. SENTIMENT OVERRIDE LOGIC
+    │     If Cardiff uncertain but GoEmotions detects strong
+    │     negative emotion, override to NEGATIVE
+    │
+    ├─ 6. RISK ASSESSMENT
+    │     High: grief/remorse ≥ 0.3 | Moderate: stress emotions ≥ 0.4 | Low: otherwise
+    │
+    ├─ 7. RESPONSE GENERATION
+    │     Empathetic message + AI-matched Bible verse (Claude Haiku)
+    │     + dominant emotion label + counselor suggestion (if needed)
+    │
+    ├─ 8. DATABASE SAVE + ALERT CREATION
+    │     Save to DB. If HIGH risk → create at-risk alert
+    │     for assigned counselor (fire-and-forget)
+    │
+    └─ 9. RETURN RESULT TO STUDENT
 ```
 
-### Database Changes
-
-When you modify the database schema:
-
-1. Update `database/schema.sql`
-2. Run the updated SQL in Supabase SQL Editor
-3. Update TypeScript types in `types/shared.ts` if needed
-
-### Adding New API Endpoints
-
-1. Create a new file in `api/` directory (e.g., `api/example/endpoint.ts`)
-2. Export a default function that handles the request:
-
-```typescript
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
-  // Handle request
-  res.status(200).json({ success: true, data: {} });
-}
-```
-
-3. The endpoint will automatically be available at `/api/example/endpoint`
-
-### Testing HuggingFace Models
-
-Test the AfriBERTa model with Nigerian Pidgin:
-
-```bash
-curl https://api-inference.huggingface.co/models/Davlan/naija-twitter-sentiment-afriberta-large \
-  -H "Authorization: Bearer YOUR_HF_TOKEN" \
-  -d '{"inputs": "I dey feel somehow today, body no dey sweet me"}'
-```
-
-Expected response:
-```json
-[
-  {"label": "negative", "score": 0.87}
-]
-```
-
-## 🚢 Deployment
-
-### Deploy to Vercel
-
-1. Install Vercel CLI:
-```bash
-npm install -g vercel
-```
-
-2. Link your project:
-```bash
-vercel link
-```
-
-3. Add environment variables in Vercel dashboard:
-   - Go to **Settings** → **Environment Variables**
-   - Add all variables from `.env` (except `VITE_*` ones)
-
-4. Deploy:
-```bash
-npm run vercel-deploy
-```
-
-Or connect your GitHub repository to Vercel for automatic deployments.
-
-### Set Up Supabase Cron Jobs
-
-After deployment, set up background jobs in Supabase:
-
-1. Go to **Database** → **Extensions** in Supabase
-2. Enable **pg_cron** extension
-3. Go to **SQL Editor** and run:
-
-```sql
--- Update emotional trends every 5 minutes
-SELECT cron.schedule(
-  'update-emotional-trends',
-  '*/5 * * * *',
-  'SELECT public.update_emotional_trends();'
-);
-
--- Delete expired text daily at midnight
-SELECT cron.schedule(
-  'delete-expired-text',
-  '0 0 * * *',
-  'SELECT public.delete_expired_text();'
-);
-```
-
-## 🧪 Testing
-
-### Manual Testing Checklist
-
-#### Student Flow
-- [ ] Sign up with school email
-- [ ] Receive verification email
-- [ ] Verify email and log in
-- [ ] Submit text in English
-- [ ] Submit text in Nigerian Pidgin
-- [ ] Receive empathetic response + Bible verse
-- [ ] View emotional trend chart
-- [ ] Request counselor contact
-- [ ] Delete account
-
-#### Counselor Flow
-- [ ] Log in as counselor
-- [ ] View aggregated trends
-- [ ] Verify no individual student names visible
-- [ ] Check real-time updates work
-
-### Performance Testing
-
-Measure response time for text submission:
-
-```bash
-curl -X POST http://localhost:3000/api/submissions/create \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"text": "I feel stressed about exams"}' \
-  -w "\nTotal time: %{time_total}s\n"
-```
-
-**Target:** < 5 seconds (ideally < 2 seconds)
-
-## 📊 Database Schema Overview
+## Database Schema Overview
 
 ### Key Tables
 
-- **students**: User accounts (extends Supabase auth.users)
-- **submissions**: Student text entries with ML analysis results
-- **emotional_trends**: Anonymized aggregates (NO student_id column)
-- **counselor_requests**: Student requests for counselor contact
-- **bible_verses**: Static verse database
+| Table | Purpose |
+|-------|---------|
+| `students` | User profiles (extends Supabase auth.users) with roles: student, pending_counselor, counselor, admin |
+| `submissions` | Individual text entries with ML analysis results (sentiment, emotion, risk, confidence) |
+| `emotional_trends` | Anonymized hourly aggregates for counselor dashboard (NO student_id column) |
+| `bible_verses` | 100+ categorized encouragement verses across 7 sentiment categories |
+| `counselor_approvals` | Staff → counselor promotion workflow |
+| `counselor_student_assignments` | Admin-managed counselor-to-student group assignments |
+| `at_risk_alerts` | Automatic alerts for HIGH risk submissions (pending → acknowledged → resolved) |
 
 ### Privacy Features
 
 1. **Row Level Security (RLS)**: Students can only access their own data
-2. **K-Anonymity**: Counselor trends only show when ≥5 students contributed
-3. **Cascade Deletion**: Deleting a student account removes all submissions
-4. **Text Expiration**: Encrypted text auto-deleted after 30 days
+2. **K-Anonymity**: Aggregate data only shown when ≥ 3 students contribute
+3. **Cascade Deletion**: Deleting a student account removes all submissions and alerts
+4. **Text Expiration**: Raw text auto-deleted after 30 days
+5. **Anonymized Trends**: `emotional_trends` table has NO student_id — anonymization by design
+6. **Assignment-Based Access**: Counselors only see aggregates for their assigned students
+7. **Privacy-Safe Emails**: Alert emails contain NO student names or submission content
 
-## 🔒 Security Best Practices
+## API Endpoints
 
-- ✅ Never commit `.env` file to Git
-- ✅ Use RLS policies for all database access
-- ✅ Validate school email domains on signup
-- ✅ Sanitize all user inputs
-- ✅ Use HTTPS only in production
-- ✅ Rotate service role keys periodically
-- ✅ Set up rate limiting on API endpoints
+| Method | Endpoint | Auth | Purpose |
+|--------|----------|------|---------|
+| `POST` | `/api/auth/signup` | None | Register with school email |
+| `POST` | `/api/auth/login` | None | Login with email/password |
+| `POST` | `/api/submissions/create` | Student JWT | Submit text for ML analysis |
+| `GET` | `/api/submissions/history` | Student JWT | Fetch submission history |
+| `DELETE` | `/api/submissions/delete` | Student JWT | Delete a submission |
+| `GET` | `/api/trends/aggregate` | Counselor JWT | Anonymized aggregate trends |
+| `GET` | `/api/counselors/pending` | Counselor JWT | List pending approvals |
+| `POST` | `/api/counselors/approve` | Counselor JWT | Approve/reject counselor |
+| `GET` | `/api/counselor/my-students` | Counselor JWT | Assigned students aggregate trends |
+| `GET` | `/api/counselor/alerts` | Counselor JWT | View pending/recent alerts |
+| `PUT` | `/api/counselor/alerts/:id/acknowledge` | Counselor JWT | Acknowledge an alert |
+| `PUT` | `/api/counselor/alerts/:id/resolve` | Counselor JWT | Resolve an alert |
+| `GET` | `/api/admin/users` | Admin JWT | List all users |
+| `PUT` | `/api/admin/users/role` | Admin JWT | Change a user's role |
+| `GET` | `/api/admin/stats` | Admin JWT | System-wide statistics |
+| `GET` | `/api/admin/assignments` | Admin JWT | List all assignments |
+| `POST` | `/api/admin/assignments` | Admin JWT | Create assignment |
+| `DELETE` | `/api/admin/assignments/:id` | Admin JWT | Remove assignment |
+| `GET` | `/api/admin/alerts` | Admin JWT | View all system alerts |
 
-## 📖 API Documentation
+## Security
 
-### Authentication
+- Never commit `.env` file to Git
+- RLS policies enforce data access at the database level
+- School email domain validation on signup
+- Input validation with Zod schemas (frontend + backend)
+- Gibberish detection rejects nonsensical input before ML analysis
+- Service role key used only server-side; frontend uses anon key (RLS enforced)
+- `SECURITY DEFINER` functions for role checks (`is_counselor()`, `is_admin()`)
 
-#### POST /api/auth/signup
-Sign up a new student with school email.
+## Deployment
 
-**Request:**
-```json
-{
-  "email": "student@unilag.edu.ng",
-  "password": "securePassword123"
-}
+### Deploy to Vercel
+
+1. Install Vercel CLI: `npm install -g vercel`
+2. Link project: `vercel link`
+3. Add environment variables in Vercel dashboard (Settings → Environment Variables)
+4. Deploy: `vercel --prod`
+
+### Set Up Supabase Cron Jobs
+
+After deployment, enable pg_cron in Supabase and run:
+
+```sql
+-- Update emotional trends every 5 minutes
+SELECT cron.schedule('update-emotional-trends', '*/5 * * * *', 'SELECT public.update_emotional_trends();');
+
+-- Delete expired text daily at midnight
+SELECT cron.schedule('delete-expired-text', '0 0 * * *', 'SELECT public.delete_expired_text();');
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "message": "Verification email sent. Please check your inbox.",
-    "user_id": "uuid"
-  }
-}
-```
+## Testing Checklist
 
-#### POST /api/auth/login
-Log in with email and password.
+### Student Flow
+- [ ] Sign up with school email
+- [ ] Verify email and log in
+- [ ] Submit gibberish text → rejected with clear message
+- [ ] Submit text in English → sentiment + emotion + Bible verse
+- [ ] Submit text in Nigerian Pidgin → Pidgin detected and analyzed correctly
+- [ ] View emotional trend chart on "My Trends" tab
+- [ ] See counselor contact suggestion for moderate/high risk results
 
-**Request:**
-```json
-{
-  "email": "student@unilag.edu.ng",
-  "password": "securePassword123"
-}
-```
+### Counselor Flow
+- [ ] Log in as counselor → counselor dashboard
+- [ ] View aggregate trends (pie chart, risk distribution)
+- [ ] View "My Students" aggregate trends (assigned students only)
+- [ ] Receive high-risk alert → acknowledge → resolve
+- [ ] Approve/reject pending counselor registrations
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "access_token": "jwt_token",
-    "refresh_token": "refresh_token",
-    "user": {
-      "id": "uuid",
-      "email": "student@unilag.edu.ng",
-      "role": "student"
-    }
-  }
-}
-```
+### Admin Flow
+- [ ] Log in as admin → admin dashboard
+- [ ] View system-wide statistics (Overview tab)
+- [ ] Search and filter users (Users tab)
+- [ ] Change a user's role
+- [ ] Assign counselor to students (Assignments tab)
+- [ ] View all system alerts (Alerts tab)
 
-### Submissions
+## Troubleshooting
 
-#### POST /api/submissions/create
-Submit text for sentiment analysis.
+**Issue: App stuck on loading**
+- Use **Incognito mode** (Ctrl+Shift+N) — browser extensions can interfere with localhost requests
 
-**Headers:**
-```
-Authorization: Bearer <jwt_token>
-```
+**Issue: HuggingFace slow on first request (~30-60s)**
+- This is expected — free tier models go idle and need to "wake up". Subsequent requests are faster.
 
-**Request:**
-```json
-{
-  "text": "I dey feel somehow today, body no dey sweet me"
-}
-```
+**Issue: "Invalid email domain" on signup**
+- Ensure the email domain is in `ALLOWED_SCHOOL_DOMAINS` in `types/shared.ts`
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "uuid",
-    "sentiment": "negative",
-    "risk_level": "moderate",
-    "confidence": 0.87,
-    "empathetic_message": "It sounds like you're having a tough day...",
-    "bible_verse": {
-      "reference": "Psalm 34:18",
-      "text": "The Lord is close to the brokenhearted..."
-    },
-    "show_counselor_option": true,
-    "created_at": "2026-02-09T10:30:00Z"
-  }
-}
-```
+**Issue: Bible verses not AI-matched (random selection)**
+- Check that `ANTHROPIC_API_KEY` is set in `.env`. Without it, the system falls back to random selection within the correct category.
 
-#### GET /api/submissions/history
-Get student's submission history.
+**Issue: No email alerts for counselors**
+- Check that `RESEND_API_KEY` is set in `.env`. In-app alerts still work without it.
 
-**Headers:**
-```
-Authorization: Bearer <jwt_token>
-```
-
-**Query Parameters:**
-- `limit` (optional, default: 20)
-- `offset` (optional, default: 0)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "submissions": [
-      {
-        "id": "uuid",
-        "sentiment": "negative",
-        "risk_level": "moderate",
-        "confidence": 0.87,
-        "created_at": "2026-02-09T10:30:00Z"
-      }
-    ],
-    "total_count": 5,
-    "has_more": false
-  }
-}
-```
-
-### Trends (Counselor Only)
-
-#### GET /api/trends/aggregate
-Get anonymized aggregate trends.
-
-**Headers:**
-```
-Authorization: Bearer <counselor_jwt_token>
-```
-
-**Query Parameters:**
-- `start_date` (optional, YYYY-MM-DD)
-- `end_date` (optional, YYYY-MM-DD)
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "daily_summary": [
-      {
-        "date": "2026-02-09",
-        "positive_percentage": 45,
-        "neutral_percentage": 30,
-        "negative_percentage": 25,
-        "total_submissions": 120
-      }
-    ],
-    "overall_stats": {
-      "total_students_contributing": 50,
-      "most_common_sentiment": "positive",
-      "average_risk_level": 1.3
-    }
-  }
-}
-```
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-**Issue: "Invalid email domain" error on signup**
-- **Solution**: Ensure the email domain is in `ALLOWED_SCHOOL_DOMAINS` in `types/shared.ts`
-
-**Issue: ML service timeout**
-- **Solution**: Check HuggingFace API token is valid and not rate-limited
-
-**Issue: Supabase RLS policy blocking access**
-- **Solution**: Verify JWT token is valid and user is authenticated
-
-**Issue: Vercel deployment fails**
-- **Solution**: Check environment variables are set in Vercel dashboard
-
-## 📚 Resources
+## Resources
 
 - [Supabase Documentation](https://supabase.com/docs)
 - [Vercel Documentation](https://vercel.com/docs)
 - [HuggingFace Inference API](https://huggingface.co/docs/api-inference)
-- [AfriBERTa Model Card](https://huggingface.co/Davlan/naija-twitter-sentiment-afriberta-large)
-- [React Query Documentation](https://tanstack.com/query/latest)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Cardiff RoBERTa Model](https://huggingface.co/cardiffnlp/twitter-roberta-base-sentiment-latest)
+- [GoEmotions Model](https://huggingface.co/SamLowe/roberta-base-go_emotions)
+- [Anthropic API Documentation](https://docs.anthropic.com)
+- [Resend Documentation](https://resend.com/docs)
+- [TanStack React Query](https://tanstack.com/query/latest)
+- [Tailwind CSS](https://tailwindcss.com/docs)
 
-## 🤝 Contributing
-
-This is an academic project. For major changes, please discuss with the team first.
-
-## 📄 License
+## License
 
 MIT
 
-## 👥 Team
-
-- Developer 1 (Primary): Full-stack + ML integration
-- Developer 2: Frontend design + data visualization
-- Developer 3: Testing + documentation + Bible verse database
-
-## 📞 Support
-
-For issues or questions, please create an issue in the GitHub repository.
-
 ---
 
-**Built with ❤️ for Nigerian university students' mental wellbeing**
+**Built for Nigerian university students' mental wellbeing**

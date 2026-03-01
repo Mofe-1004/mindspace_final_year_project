@@ -6,14 +6,19 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ====================================================================================
--- STUDENTS TABLE (User Accounts)
+-- STUDENTS TABLE (All User Accounts — Students, Counselors, and Admins)
 -- ====================================================================================
--- Note: Supabase Auth manages the auth.users table automatically
--- This table extends auth.users with additional application-specific data
+-- Note: Despite the name "students", this table stores ALL user roles.
+-- The `role` column distinguishes between student, counselor, and admin accounts.
+-- Supabase Auth manages the auth.users table automatically;
+-- this table extends auth.users with additional application-specific data.
 
 CREATE TABLE IF NOT EXISTS public.students (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT UNIQUE NOT NULL,
+  first_name TEXT,
+  last_name TEXT,
+  phone_number TEXT,
   email_verified BOOLEAN DEFAULT FALSE,
   school_domain TEXT NOT NULL,
   role TEXT DEFAULT 'student' CHECK (role IN ('student', 'counselor')),
@@ -145,7 +150,7 @@ CREATE TABLE IF NOT EXISTS public.bible_verses (
 
   -- Sentiment category for matching
   sentiment_match TEXT NOT NULL CHECK (
-    sentiment_match IN ('positive', 'negative_anxious', 'negative_sad', 'neutral_encouragement', 'at_risk')
+    sentiment_match IN ('positive', 'negative_anxious', 'negative_sad', 'negative_angry', 'negative_struggle', 'neutral_encouragement', 'at_risk')
   ),
 
   -- Language (currently English only)

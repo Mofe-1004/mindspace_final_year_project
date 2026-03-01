@@ -13,6 +13,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
 import {
   Sentiment,
   RiskLevel,
@@ -92,6 +93,26 @@ const FALLBACK_VERSES: Record<BibleVerseCategory, SelectedVerse[]> = {
       text: 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.'
     },
   ],
+  negative_angry: [
+    {
+      reference: 'Psalm 62:5-6',
+      text: 'Yes, my soul, find rest in God; my hope comes from him. Truly he is my rock and my salvation; he is my fortress, I will not be shaken.'
+    },
+    {
+      reference: 'Romans 12:12',
+      text: 'Be joyful in hope, patient in affliction, faithful in prayer.'
+    },
+  ],
+  negative_struggle: [
+    {
+      reference: 'John 8:36',
+      text: 'So if the Son sets you free, you will be free indeed.'
+    },
+    {
+      reference: '2 Corinthians 12:9',
+      text: 'But he said to me, "My grace is sufficient for you, for my power is made perfect in weakness." Therefore I will boast all the more gladly about my weaknesses, so that Christ\'s power may rest on me.'
+    },
+  ],
   at_risk: [
     {
       reference: 'Isaiah 41:10',
@@ -126,46 +147,151 @@ async function fetchVersesFromDB(
       .eq('sentiment_match', category);
 
     if (error) {
-      console.error('Error fetching verses:', error);
       return [];
     }
 
     return data || [];
-  } catch (error) {
-    console.error('Database connection error:', error);
+  } catch {
     return [];
   }
 }
 
 /**
- * Selects an appropriate Bible verse based on sentiment and risk level
+ * Uses Claude Haiku to pick the most contextually appropriate verse
+ * from a list of candidates based on the student's dominant emotion.
+ *
+ * Returns the index of the best verse, or -1 on failure.
+ */
+/**
+ * Category-specific guidance for the AI verse ranker.
+ * Each line tells Claude Haiku what KIND of verse to prefer for this emotion category.
+ */
+const CATEGORY_GUIDANCE: Record<BibleVerseCategory, string> = {
+  positive: 'Pick a verse that celebrates joy or gratitude with the student.',
+  negative_anxious: 'Pick a verse that offers peace and reassurance about the future.',
+  negative_sad: 'Pick a verse that offers comfort and hope during grief or sadness.',
+  negative_angry: 'Read what the student wrote carefully. If they are angry at a PERSON (family, friend, roommate), pick a verse about peace, forgiveness, or healing relationships. If they are frustrated with a SITUATION (school, systems, unfairness), pick a verse about patience, endurance, or God\'s justice. Either way, never scold or tell the student to stop being angry.',
+  negative_struggle: 'Pick a verse that speaks to strength and freedom from hardship.',
+  neutral_encouragement: 'Pick a verse that gently encourages and uplifts.',
+  at_risk: 'Pick the most personally comforting verse — one that affirms the student\'s worth and God\'s presence. Avoid any verse with violent or dark imagery.',
+};
+
+async function aiRankVerses(
+  verses: { reference: string; text: string }[],
+  dominantEmotion: string,
+  sentiment: Sentiment,
+  riskLevel: RiskLevel,
+  category: BibleVerseCategory,
+  studentText?: string,
+  concernType?: 'substance_abuse' | 'abuse' | 'eating_disorder' | 'isolation' | null
+): Promise<number> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || verses.length <= 1) return -1;
+
+  try {
+    const client = new Anthropic({ apiKey });
+
+    const verseList = verses
+      .map((v, i) => `${i + 1}. ${v.reference}: "${v.text}"`)
+      .join('\n');
+
+    // Build context-aware prompt — include specific concern type when available
+    const concernLabels: Record<string, string> = {
+      substance_abuse: 'substance addiction',
+      abuse: 'physical or emotional abuse',
+      eating_disorder: 'an eating disorder or self-neglect',
+      isolation: 'severe loneliness and isolation',
+    };
+    const concernContext = concernType && concernLabels[concernType]
+      ? ` This student is dealing with ${concernLabels[concernType]}.`
+      : '';
+
+    // Include student's text so the AI can understand the situation (not just the emotion label)
+    const studentContext = studentText
+      ? `\n\nThe student wrote: "${studentText}"`
+      : '';
+
+    const guidance = CATEGORY_GUIDANCE[category];
+
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 10,
+      messages: [
+        {
+          role: 'user',
+          content: `A university student is feeling "${dominantEmotion}" (sentiment: ${sentiment}, risk: ${riskLevel}).${concernContext}${studentContext}
+
+${guidance} Always pick a verse that COMFORTS or ENCOURAGES — never one that corrects, lectures, or implies the student is sinning. Prefer verses that use "you" or feel like a direct promise. Reply with ONLY the number.
+
+${verseList}`,
+        },
+      ],
+    });
+
+    const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+    const match = text.match(/\d+/);
+    if (match) {
+      const index = parseInt(match[0], 10) - 1;
+      if (index >= 0 && index < verses.length) {
+        return index;
+      }
+    }
+    return -1;
+  } catch {
+    return -1;
+  }
+}
+
+/**
+ * Selects an appropriate Bible verse based on sentiment, risk level, and emotion.
+ *
+ * Flow:
+ * 1. Determine category from sentiment + risk level
+ * 2. Fetch candidate verses from DB (or use fallbacks)
+ * 3. If ANTHROPIC_API_KEY is configured, use Claude Haiku to pick the best match
+ * 4. Otherwise, pick randomly
  *
  * @param sentiment - The detected sentiment
  * @param riskLevel - The assessed risk level
+ * @param dominantEmotion - The dominant emotion detected by ML (e.g., 'sadness', 'confusion')
+ * @param hasConcernLanguage - Whether addiction/abuse/neglect phrases were detected
  * @returns A verse with reference and text
  */
 export async function selectVerse(
   sentiment: Sentiment,
-  riskLevel: RiskLevel
+  riskLevel: RiskLevel,
+  dominantEmotion?: string,
+  hasConcernLanguage?: boolean,
+  concernType?: 'substance_abuse' | 'abuse' | 'eating_disorder' | 'isolation' | null,
+  studentText?: string
 ): Promise<SelectedVerse> {
-  // Determine the appropriate category
-  const category = getBibleVerseCategory(sentiment, riskLevel);
+  // Determine the appropriate category (uses emotion to distinguish anger vs sadness, concern → struggle)
+  const category = getBibleVerseCategory(sentiment, riskLevel, dominantEmotion, hasConcernLanguage);
 
   // Try to fetch from database first
-  const verses = await fetchVersesFromDB(category);
+  const dbVerses = await fetchVersesFromDB(category);
 
-  if (verses.length > 0) {
-    const verse = randomChoice(verses);
-    return {
-      reference: verse.verse_reference,
-      text: verse.verse_text,
-    };
+  // Build candidate list
+  let candidates: SelectedVerse[];
+  if (dbVerses.length > 0) {
+    candidates = dbVerses.map((v) => ({
+      reference: v.verse_reference,
+      text: v.verse_text,
+    }));
+  } else {
+    candidates = FALLBACK_VERSES[category];
   }
 
-  // Fall back to hardcoded verses
-  console.warn(`Using fallback verse for category: ${category}`);
-  const fallbackVerses = FALLBACK_VERSES[category];
-  return randomChoice(fallbackVerses);
+  // If AI key is configured and we have a dominant emotion, use AI ranking
+  if (dominantEmotion && process.env.ANTHROPIC_API_KEY && candidates.length > 1) {
+    const bestIndex = await aiRankVerses(candidates, dominantEmotion, sentiment, riskLevel, category, studentText, concernType);
+    if (bestIndex >= 0) {
+      return candidates[bestIndex];
+    }
+  }
+
+  // Fallback to random selection
+  return randomChoice(candidates);
 }
 
 /**
@@ -192,6 +318,8 @@ export async function checkVerseDatabase(): Promise<{
     [BibleVerseSentimentMatch.POSITIVE]: 0,
     negative_anxious: 0,
     negative_sad: 0,
+    negative_angry: 0,
+    negative_struggle: 0,
     neutral_encouragement: 0,
     at_risk: 0,
   };

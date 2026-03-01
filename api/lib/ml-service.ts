@@ -222,7 +222,6 @@ async function callModelWithTimeout(
     return await fetchModel(model, text, timeoutMs);
   } catch (firstError) {
     if (isNetworkError(firstError)) {
-      console.warn(`Network error calling ${model}, retrying in 2s...`, firstError instanceof Error ? firstError.message : firstError);
       await new Promise(resolve => setTimeout(resolve, 2000));
       return await fetchModel(model, text, timeoutMs);
     }
@@ -243,6 +242,122 @@ function mapToSentiment(label: string): Sentiment {
 }
 
 /**
+ * Crisis keyword detection
+ *
+ * GoEmotions doesn't have a "suicidal" label — it maps crisis language to
+ * generic emotions like "sadness". This keyword list catches explicit crisis
+ * phrases that the model misses, forcing HIGH risk when detected.
+ *
+ * Includes English and Nigerian Pidgin variants.
+ */
+const CRISIS_PHRASES = [
+  // English — explicit suicidal/crisis language
+  'want to die', 'wanna die', 'want to end it', 'end my life', 'end it all',
+  'kill myself', 'killing myself', 'take my life', 'take my own life',
+  'no reason to live', 'no point in living', 'not worth living',
+  'better off dead', 'wish i was dead', 'wish i were dead',
+  'don\'t want to be here', 'dont want to be here',
+  'don\'t want to exist', 'dont want to exist',
+  'can\'t go on', 'cant go on', 'can\'t take it anymore', 'cant take it anymore',
+  'no way out', 'give up on life', 'nothing to live for',
+  'suicide', 'suicidal',
+  // English — indirect crisis language ("feel like dying", self-harm)
+  'feel like dying', 'feels like dying', 'like dying', 'rather be dead', 'rather die',
+  'ready to die', 'want to disappear', 'wanna disappear',
+  'hurt myself', 'harm myself', 'cut myself', 'self harm', 'self-harm',
+  'don\'t want to wake up', 'dont want to wake up',
+  'don\'t want to live', 'dont want to live', 'tired of living',
+  'life is not worth it', 'life isn\'t worth it', 'life isnt worth it',
+  // Nigerian Pidgin
+  'i wan die', 'i want die', 'make i die', 'i go kill myself',
+  'no reason to dey alive', 'life no worth am', 'i no wan live again',
+  'i no fit continue', 'wetin be the point', 'i don tire for life',
+  'i wan end am', 'nothing dey for me again',
+  'e be like say i wan die', 'i dey feel like to die', 'i no wan dey here again',
+];
+
+/**
+ * Checks if text contains crisis language that should force HIGH risk.
+ * Uses lowercase matching against known crisis phrases.
+ */
+function detectCrisisLanguage(text: string): boolean {
+  const lower = text.toLowerCase();
+  return CRISIS_PHRASES.some((phrase) => lower.includes(phrase));
+}
+
+/**
+ * Concern phrases — serious disclosures that should force at least MODERATE risk.
+ *
+ * These aren't immediately life-threatening (unlike CRISIS_PHRASES → HIGH),
+ * but indicate situations that need counselor attention: addiction, abuse,
+ * eating disorders, self-neglect, and severe isolation.
+ */
+/**
+ * Concern categories — used to give the AI verse selector specific context
+ * about what the student is dealing with.
+ */
+export type ConcernType = 'substance_abuse' | 'abuse' | 'eating_disorder' | 'isolation' | null;
+
+const CONCERN_CATEGORY_MAP: { phrases: string[]; type: ConcernType }[] = [
+  {
+    type: 'substance_abuse',
+    phrases: [
+      'addicted to', 'addiction', 'addicted', 'abusing drugs', 'abusing alcohol',
+      'drug abuse', 'alcohol abuse', 'substance abuse',
+      'i do drugs', 'i use drugs', 'using drugs', 'taking drugs',
+      'can\'t stop drinking', 'cant stop drinking', 'drinking too much',
+      'can\'t stop using', 'cant stop using',
+      'overdose', 'overdosed',
+      'i dey take drugs', 'i dey drink too much',
+    ],
+  },
+  {
+    type: 'abuse',
+    phrases: [
+      'being abused', 'is abusing me', 'abuses me',
+      'hits me', 'beats me', 'beating me',
+      'molested', 'raped', 'sexually assaulted', 'sexual abuse',
+      'domestic violence', 'being hit', 'being beaten',
+      'touches me', 'inappropriate touching',
+      'dem dey beat me', 'person dey beat me', 'dem dey abuse me',
+    ],
+  },
+  {
+    type: 'eating_disorder',
+    phrases: [
+      'starving myself', 'not eating', 'haven\'t eaten', 'havent eaten',
+      'stop eating', 'stopped eating', 'refuse to eat',
+      'purging', 'making myself throw up', 'bulimia', 'anorexia', 'binge eating',
+      'i no dey chop', 'i no fit chop', 'i never chop',
+    ],
+  },
+  {
+    type: 'isolation',
+    phrases: [
+      'nobody cares about me', 'no one cares about me', 'nobody loves me',
+      'no one loves me', 'completely alone', 'all alone',
+      'no friends', 'have no one', 'i have nobody',
+      'everyone hates me', 'everybody hates me',
+      'nobody dey for me', 'no person care about me',
+    ],
+  },
+];
+
+/**
+ * Checks if text contains concern language that should force at least MODERATE risk.
+ * Returns the specific concern type for better AI verse matching.
+ */
+function detectConcernLanguage(text: string): { detected: boolean; type: ConcernType } {
+  const lower = text.toLowerCase();
+  for (const category of CONCERN_CATEGORY_MAP) {
+    if (category.phrases.some((phrase) => lower.includes(phrase))) {
+      return { detected: true, type: category.type };
+    }
+  }
+  return { detected: false, type: null };
+}
+
+/**
  * Risk-related emotions from GoEmotions
  * Grouped by severity for risk assessment
  *
@@ -256,18 +371,43 @@ const POSITIVE_EMOTIONS = ['joy', 'love', 'optimism', 'excitement', 'admiration'
 
 /**
  * Maps GoEmotions output to RiskLevel
- * Uses emotion scores to assess mental health risk
+ * Uses emotion scores to assess mental health risk.
+ * Also accepts the original text for crisis keyword detection.
  */
 function mapEmotionsToRiskLevel(
   emotions: HfClassificationResult[],
-  sentiment: Sentiment
-): { riskLevel: RiskLevel; score: number; dominantEmotion: string } {
+  sentiment: Sentiment,
+  originalText?: string
+): { riskLevel: RiskLevel; score: number; dominantEmotion: string; hasConcernLanguage: boolean; concernType: ConcernType } {
+  // Crisis keyword override — MUST run first, even if models failed.
+  // If text contains explicit crisis language (e.g. "want to die", "kill myself"),
+  // force HIGH risk immediately regardless of model output.
+  if (originalText && detectCrisisLanguage(originalText)) {
+    const topLabel = emotions?.length
+      ? [...emotions].sort((a, b) => b.score - a.score)[0].label
+      : 'crisis';
+    return {
+      riskLevel: RiskLevel.HIGH,
+      score: 1.0,
+      dominantEmotion: topLabel,
+      hasConcernLanguage: false, // crisis overrides concern
+      concernType: null,
+    };
+  }
+
+  // Concern keyword check — force at least MODERATE risk for serious disclosures
+  // (addiction, abuse, eating disorders, severe isolation)
+  const concernResult = originalText ? detectConcernLanguage(originalText) : { detected: false, type: null as ConcernType };
+  const hasConcernLanguage = concernResult.detected;
+
   // Handle empty results (API failure fallback)
   if (!emotions || emotions.length === 0) {
     return {
-      riskLevel: sentiment === Sentiment.NEGATIVE ? RiskLevel.MODERATE : RiskLevel.LOW,
+      riskLevel: hasConcernLanguage || sentiment === Sentiment.NEGATIVE ? RiskLevel.MODERATE : RiskLevel.LOW,
       score: 0.5,
       dominantEmotion: 'unknown',
+      hasConcernLanguage,
+      concernType: concernResult.type,
     };
   }
 
@@ -319,10 +459,18 @@ function mapEmotionsToRiskLevel(
     riskScore = Math.max(0.1, 1 - positiveScore); // Low risk score when positive emotions dominate
   }
 
+  // Concern language floor: if serious disclosure detected, never go below MODERATE
+  if (hasConcernLanguage && riskLevel === RiskLevel.LOW) {
+    riskLevel = RiskLevel.MODERATE;
+    riskScore = Math.max(riskScore, 0.5);
+  }
+
   return {
     riskLevel,
     score: Math.min(Math.round(riskScore * 100) / 100, 1.0), // Cap at 1.0
     dominantEmotion: topEmotion?.label || 'neutral',
+    hasConcernLanguage,
+    concernType: concernResult.type,
   };
 }
 
@@ -334,10 +482,7 @@ async function analyzeSentiment(text: string): Promise<{
   score: number;
 }> {
   try {
-    console.log('Calling Cardiff RoBERTa with text:', text.substring(0, 50) + '...');
     const results = await callModelWithTimeout(CARDIFF_MODEL, text);
-
-    console.log('Cardiff raw response:', JSON.stringify(results, null, 2));
 
     if (!results || results.length === 0) {
       throw new Error('No results from Cardiff RoBERTa');
@@ -348,15 +493,11 @@ async function analyzeSentiment(text: string): Promise<{
       current.score > prev.score ? current : prev
     );
 
-    console.log('Cardiff top result:', topResult);
-
     return {
       sentiment: mapToSentiment(topResult.label),
       score: topResult.score,
     };
-  } catch (error) {
-    console.error('Cardiff analysis failed:', error);
-    console.error('Error details:', error instanceof Error ? error.message : String(error));
+  } catch {
     // Fallback to neutral with low confidence
     return {
       sentiment: Sentiment.NEUTRAL,
@@ -370,18 +511,14 @@ async function analyzeSentiment(text: string): Promise<{
  */
 async function analyzeEmotionsRaw(text: string): Promise<HfClassificationResult[]> {
   try {
-    console.log('Calling GoEmotions with text:', text.substring(0, 50) + '...');
     const results = await callModelWithTimeout(GOEMOTIONS_MODEL, text);
-
-    console.log('GoEmotions raw response:', JSON.stringify(results.slice(0, 5), null, 2));
 
     if (!results || results.length === 0) {
       throw new Error('No results from GoEmotions');
     }
 
     return results;
-  } catch (error) {
-    console.error('GoEmotions analysis failed:', error);
+  } catch {
     // Return empty array on failure - will trigger fallback in risk mapping
     return [];
   }
@@ -400,21 +537,16 @@ async function analyzeEmotionsRaw(text: string): Promise<HfClassificationResult[
  * @returns MLAnalysisResult with sentiment, risk level, confidence, and language
  */
 export async function analyzeText(text: string): Promise<MLAnalysisResult> {
-  const startTime = Date.now();
-
   // Step 1: Detect language
   const language = detectLanguage(text);
-  console.log('Detected language:', language);
 
   // Step 2: Translate Pidgin to English for better model understanding
   let processedText = text;
   if (language === 'pidgin' || language === 'mixed') {
     processedText = translatePidgin(text);
-    console.log('Translated text:', processedText);
   }
 
   // Step 3: Run BOTH models in parallel for faster response
-  console.log('Running Cardiff + GoEmotions in parallel...');
   const [sentimentResult, emotionsRaw] = await Promise.all([
     analyzeSentiment(processedText),
     analyzeEmotionsRaw(processedText),
@@ -428,26 +560,17 @@ export async function analyzeText(text: string): Promise<MLAnalysisResult> {
   if (sentimentResult.score < 0.5 && emotionsRaw.length > 0) {
     const topEmotion = [...emotionsRaw].sort((a, b) => b.score - a.score)[0];
     if (NEGATIVE_EMOTION_OVERRIDE.includes(topEmotion.label.toLowerCase()) && topEmotion.score >= 0.6) {
-      console.log(`GoEmotions override: Cardiff was ${sentimentResult.sentiment} (${sentimentResult.score.toFixed(3)}) → overriding to NEGATIVE via ${topEmotion.label} (${topEmotion.score.toFixed(3)})`);
       sentimentResult.sentiment = Sentiment.NEGATIVE;
       sentimentResult.score = topEmotion.score * 0.8; // Scale to avoid overconfidence
     }
   }
 
   // Step 4b: Map emotions to risk level (now that we have sentiment context)
-  const riskResult = mapEmotionsToRiskLevel(emotionsRaw, sentimentResult.sentiment);
+  // Pass original text so crisis keywords can be detected even when GoEmotions misses them
+  const riskResult = mapEmotionsToRiskLevel(emotionsRaw, sentimentResult.sentiment, text);
 
   // Calculate combined confidence (average of both models)
   const confidence = (sentimentResult.score + riskResult.score) / 2;
-
-  const elapsed = Date.now() - startTime;
-  console.log(`ML analysis completed in ${elapsed}ms`);
-  console.log('Results:', {
-    sentiment: sentimentResult.sentiment,
-    risk_level: riskResult.riskLevel,
-    dominant_emotion: riskResult.dominantEmotion,
-    confidence,
-  });
 
   return {
     sentiment: sentimentResult.sentiment,
@@ -457,6 +580,8 @@ export async function analyzeText(text: string): Promise<MLAnalysisResult> {
     language_detected: language,
     afriberta_score: sentimentResult.score, // Now Cardiff score (keeping field name for compatibility)
     mentalbert_score: riskResult.score,     // Now GoEmotions score (keeping field name for compatibility)
+    has_concern_language: riskResult.hasConcernLanguage,
+    concern_type: riskResult.concernType,
   };
 }
 
@@ -479,15 +604,15 @@ export async function checkMLHealth(): Promise<{
   try {
     await callModelWithTimeout(CARDIFF_MODEL, testText, 5000);
     cardiffHealthy = true;
-  } catch (e) {
-    console.error('Cardiff health check failed:', e);
+  } catch {
+    // Cardiff unavailable
   }
 
   try {
     await callModelWithTimeout(GOEMOTIONS_MODEL, testText, 5000);
     goemotionsHealthy = true;
-  } catch (e) {
-    console.error('GoEmotions health check failed:', e);
+  } catch {
+    // GoEmotions unavailable
   }
 
   return {

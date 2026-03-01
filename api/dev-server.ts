@@ -20,6 +20,7 @@ console.log('Environment check:', {
   SUPABASE_URL: process.env.SUPABASE_URL ? '✓ loaded' : '✗ missing',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ loaded' : '✗ missing',
   HUGGINGFACE_API_TOKEN: process.env.HUGGINGFACE_API_TOKEN ? '✓ loaded' : '✗ missing',
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ? '✓ loaded' : '✗ missing',
 });
 
 const app = express();
@@ -75,6 +76,7 @@ const wrapVercelHandler = (handlerPath: string) => {
 // Submissions routes
 app.post('/api/submissions/create', wrapVercelHandler('./submissions/create'));
 app.get('/api/submissions/history', wrapVercelHandler('./submissions/history'));
+app.delete('/api/submissions/delete', wrapVercelHandler('./submissions/delete'));
 
 // Trends routes (counselor only)
 app.get('/api/trends/aggregate', wrapVercelHandler('./trends/aggregate'));
@@ -83,8 +85,26 @@ app.get('/api/trends/aggregate', wrapVercelHandler('./trends/aggregate'));
 app.get('/api/counselors/pending', wrapVercelHandler('./counselors/pending'));
 app.post('/api/counselors/approve', wrapVercelHandler('./counselors/approve'));
 
+// Admin routes
+app.get('/api/admin/users', wrapVercelHandler('./admin/users'));
+app.put('/api/admin/users/role', wrapVercelHandler('./admin/role'));
+app.get('/api/admin/stats', wrapVercelHandler('./admin/stats'));
+app.get('/api/admin/assignments', wrapVercelHandler('./admin/assignments'));
+app.post('/api/admin/assignments', wrapVercelHandler('./admin/assignments'));
+app.delete('/api/admin/assignments', wrapVercelHandler('./admin/assignments'));
+app.get('/api/admin/alerts', wrapVercelHandler('./admin/alerts'));
+
+// Counselor routes
+app.get('/api/counselor/my-students', wrapVercelHandler('./counselor/my-students'));
+app.get('/api/counselor/my-counselor', wrapVercelHandler('./counselor/my-counselor'));
+app.get('/api/counselor/alerts', wrapVercelHandler('./counselor/alerts'));
+app.put('/api/counselor/alerts', wrapVercelHandler('./counselor/alerts'));
+
+// Auth routes
+app.post('/api/auth/ensure-profile', wrapVercelHandler('./auth/ensure-profile'));
+
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
@@ -92,9 +112,18 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🚀 API Dev Server running on http://localhost:${PORT}`);
   console.log(`   POST /api/submissions/create - Submit text for analysis`);
-  console.log(`   GET  /api/submissions/history - Get submission history`);
+  console.log(`   GET  /api/submissions/history - Get submission history (last 30 days)`);
+  console.log(`   DEL  /api/submissions/delete - Delete a submission`);
   console.log(`   GET  /api/trends/aggregate - Get aggregate trends (counselors)`);
   console.log(`   GET  /api/counselors/pending - Get pending approvals (counselors)`);
   console.log(`   POST /api/counselors/approve - Approve/reject counselor (counselors)`);
+  console.log(`   GET  /api/admin/users - List all users (admin)`);
+  console.log(`   PUT  /api/admin/users/role - Change user role (admin)`);
+  console.log(`   GET  /api/admin/stats - System statistics (admin)`);
+  console.log(`   *    /api/admin/assignments - Manage assignments (admin)`);
+  console.log(`   GET  /api/counselor/my-students - Assigned students trends (counselor)`);
+  console.log(`   *    /api/counselor/alerts - View/manage alerts (counselor)`);
+  console.log(`   GET  /api/admin/alerts - View all alerts (admin)`);
+  console.log(`   POST /api/auth/ensure-profile - Ensure user profile exists`);
   console.log(`   GET  /api/health - Health check\n`);
 });

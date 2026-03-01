@@ -59,7 +59,7 @@ export default function AwaitingApproval() {
           <CardContent className="space-y-6">
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <p className="text-sm text-amber-800">
-                An existing counselor needs to approve your request before you can
+                An administrator needs to approve your counselor registration before you can
                 access the counselor dashboard. This usually happens within 24-48 hours.
               </p>
             </div>

@@ -48,13 +48,11 @@ async function validateToken(
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('Token validation error:', error);
       return null;
     }
 
     return { userId: user.id, email: user.email || '' };
-  } catch (error) {
-    console.error('Token validation exception:', error);
+  } catch {
     return null;
   }
 }
@@ -166,7 +164,6 @@ export default async function handler(
       .eq('user_id', user_id);
 
     if (updateApprovalError) {
-      console.error('Update approval error:', updateApprovalError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
@@ -179,7 +176,6 @@ export default async function handler(
         .eq('id', user_id);
 
       if (updateRoleError) {
-        console.error('Update role error:', updateRoleError);
         // Rollback approval status
         await supabase
           .from('counselor_approvals')
@@ -201,8 +197,7 @@ export default async function handler(
     };
 
     res.status(200).json(response);
-  } catch (error) {
-    console.error('Unexpected error in approve handler:', error);
+  } catch {
     sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR);
   }
 }

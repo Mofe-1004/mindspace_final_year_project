@@ -53,6 +53,8 @@ export default function RoleBasedRoute({
  */
 function getDefaultRedirect(role: UserRole | null): string {
   switch (role) {
+    case UserRole.ADMIN:
+      return '/admin'
     case UserRole.STUDENT:
       return '/dashboard'
     case UserRole.COUNSELOR:

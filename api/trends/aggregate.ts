@@ -43,13 +43,11 @@ async function validateToken(
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('Token validation error:', error);
       return null;
     }
 
     return { userId: user.id, email: user.email || '' };
-  } catch (error) {
-    console.error('Token validation exception:', error);
+  } catch {
     return null;
   }
 }
@@ -140,7 +138,6 @@ export default async function handler(
       .order('hour', { ascending: true });
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
@@ -245,8 +242,7 @@ export default async function handler(
     };
 
     res.status(200).json(response);
-  } catch (error) {
-    console.error('Unexpected error in trends handler:', error);
+  } catch {
     sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR);
   }
 }

@@ -40,13 +40,11 @@ async function validateToken(
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('Token validation error:', error);
       return null;
     }
 
     return { userId: user.id, email: user.email || '' };
-  } catch (error) {
-    console.error('Token validation exception:', error);
+  } catch {
     return null;
   }
 }
@@ -135,18 +133,17 @@ export default async function handler(
       .order('requested_at', { ascending: true });
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
 
     // Transform to response format
-    const pendingItems: PendingApprovalItem[] = (approvals || []).map((a: any) => ({
-      id: a.id,
-      user_id: a.user_id,
-      user_email: a.students?.email || 'Unknown',
-      status: a.status,
-      requested_at: a.requested_at,
+    const pendingItems: PendingApprovalItem[] = (approvals || []).map((a: Record<string, unknown>) => ({
+      id: a.id as string,
+      user_id: a.user_id as string,
+      user_email: ((a.students as Record<string, string> | null)?.email) || 'Unknown',
+      status: a.status as 'pending' | 'approved' | 'rejected',
+      requested_at: a.requested_at as string,
     }));
 
     const response: ApiResponse<GetPendingApprovalsResponse> = {
@@ -158,8 +155,7 @@ export default async function handler(
     };
 
     res.status(200).json(response);
-  } catch (error) {
-    console.error('Unexpected error in pending handler:', error);
+  } catch {
     sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR);
   }
 }

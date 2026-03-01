@@ -14,18 +14,12 @@ import { BookOpen, MessageCircle, X, ChevronDown, ChevronUp } from 'lucide-react
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
 import { Card, CardContent } from './ui/card'
-import { CreateSubmissionResponse, Sentiment } from '../../../types/shared'
+import { CreateSubmissionResponse } from '../../../types/shared'
 
 interface SubmissionResultProps {
   result: CreateSubmissionResponse
+  submittedText: string
   onNewSubmission: () => void
-}
-
-// Sentiment colours (used for styling only — label comes from dominant_emotion)
-const SENTIMENT_CONFIG: Record<Sentiment, { color: string; bgColor: string }> = {
-  [Sentiment.POSITIVE]: { color: 'text-green-600', bgColor: 'bg-green-50' },
-  [Sentiment.NEUTRAL]:  { color: 'text-blue-600',  bgColor: 'bg-blue-50'  },
-  [Sentiment.NEGATIVE]: { color: 'text-amber-600', bgColor: 'bg-amber-50' },
 }
 
 // Maps raw GoEmotions labels to human-friendly names
@@ -33,7 +27,7 @@ const EMOTION_DISPLAY: Record<string, string> = {
   confusion: 'Confused', nervousness: 'Anxious', sadness: 'Sad',
   fear: 'Worried', disappointment: 'Disappointed', grief: 'Deeply Sad',
   remorse: 'Remorseful', anger: 'Frustrated', annoyance: 'Unsettled',
-  embarrassment: 'Embarrassed', curiosity: 'Curious', neutral: 'Steady',
+  embarrassment: 'Embarrassed', curiosity: 'Curious', neutral: 'Steady', crisis: 'Distressed',
   optimism: 'Hopeful', joy: 'Joyful', love: 'Loved', admiration: 'Grateful',
   amusement: 'Amused', excitement: 'Excited', gratitude: 'Thankful',
   pride: 'Proud', relief: 'Relieved', caring: 'Caring', unknown: 'Uncertain',
@@ -46,21 +40,37 @@ function formatEmotion(emotion: string | null | undefined): string {
 
 export default function SubmissionResult({
   result,
+  submittedText,
   onNewSubmission,
 }: SubmissionResultProps) {
   const [showDetails, setShowDetails] = useState(false)
-  const [counselorRequested, setCounselorRequested] = useState(false)
 
-  const sentimentInfo = SENTIMENT_CONFIG[result.sentiment] ?? SENTIMENT_CONFIG[Sentiment.NEUTRAL]
   const emotionLabel = formatEmotion(result.dominant_emotion)
 
-  const handleCounselorRequest = async () => {
-    // TODO: Implement counselor request API call
-    setCounselorRequested(true)
+  const handleCounselorRequest = () => {
+    // Dismiss the result to reveal the dashboard with the counselor contact card
+    onNewSubmission()
+    // Scroll to the counselor card after a brief delay (let the DOM update)
+    setTimeout(() => {
+      const card = document.getElementById('counselor-contact-card')
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        card.classList.add('ring-2', 'ring-primary', 'ring-offset-2')
+        setTimeout(() => card.classList.remove('ring-2', 'ring-primary', 'ring-offset-2'), 3000)
+      }
+    }, 100)
   }
 
   return (
     <div className="space-y-4">
+      {/* Original Entry */}
+      {submittedText && (
+        <div className="bg-muted/50 border border-border/40 rounded-2xl px-5 py-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Your Entry</p>
+          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{submittedText}</p>
+        </div>
+      )}
+
       {/* Gradient Response Card */}
       <div className="relative bg-gradient-to-br from-primary to-primary/70 text-white rounded-3xl p-8 shadow-lg">
         {/* Header */}
@@ -115,14 +125,10 @@ export default function SubmissionResult({
           </button>
 
           {showDetails && (
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div className="bg-white/15 rounded-xl p-3">
+            <div className="mt-3 text-sm">
+              <div className="bg-white/15 rounded-xl p-3 inline-block">
                 <p className="text-xs text-white/60 mb-1">Emotional Tone</p>
                 <p className="font-medium text-white">{emotionLabel}</p>
-              </div>
-              <div className="bg-white/15 rounded-xl p-3">
-                <p className="text-xs text-white/60 mb-1">Confidence</p>
-                <p className="font-medium text-white">{Math.round(result.confidence * 100)}%</p>
               </div>
             </div>
           )}
@@ -130,23 +136,29 @@ export default function SubmissionResult({
       </div>
 
       {/* Counselor Option - Only shown for moderate/high risk */}
-      {result.show_counselor_option && !counselorRequested && (
+      {result.show_counselor_option && (
         <Card className="border-primary/20">
           <CardContent className="pt-4 pb-4">
             <Alert className="border-0 bg-transparent p-0">
               <MessageCircle className="h-4 w-4 text-primary" />
               <AlertDescription className="ml-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <p className="text-sm">
-                    Would you like to speak with a counselor? They're here to help.
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm">
+                      Would you like to speak with a counselor? They're here to help.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleCounselorRequest}
+                      className="shrink-0 rounded-full bg-gradient-to-r from-primary to-secondary text-white border-0"
+                    >
+                      Contact Counselor
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    For your safety, entries flagged as high-risk are shared with your assigned
+                    counselor so they can support you. All other entries remain private.
                   </p>
-                  <Button
-                    size="sm"
-                    onClick={handleCounselorRequest}
-                    className="shrink-0 rounded-full bg-gradient-to-r from-primary to-secondary text-white border-0"
-                  >
-                    Contact Counselor
-                  </Button>
                 </div>
               </AlertDescription>
             </Alert>
@@ -154,23 +166,6 @@ export default function SubmissionResult({
         </Card>
       )}
 
-      {/* Counselor Request Confirmation */}
-      {counselorRequested && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-start gap-3">
-              <MessageCircle className="h-4 w-4 text-green-600 mt-0.5" />
-              <div className="text-green-800">
-                <p className="font-medium">Request sent!</p>
-                <p className="text-sm mt-1">
-                  A counselor will reach out to you soon through your school email.
-                  This is completely confidential.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Encouragement Footer */}
       <div className="text-center py-4">

@@ -3,8 +3,8 @@
  *
  * GET /api/submissions/history?limit=20&offset=0
  *
- * Returns the authenticated student's past submissions for trend visualization.
- * Does NOT return text_encrypted for privacy.
+ * Returns the authenticated student's past submissions (last 30 days).
+ * Includes entry text so students can review their own past entries.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -41,13 +41,11 @@ async function validateToken(
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
-      console.error('Token validation error:', error);
       return null;
     }
 
     return { userId: user.id, email: user.email || '' };
-  } catch (error) {
-    console.error('Token validation exception:', error);
+  } catch {
     return null;
   }
 }
@@ -100,30 +98,35 @@ export default async function handler(
     const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100);
     const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
 
-    // Get total count first
+    // Only show entries from the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const cutoffDate = thirtyDaysAgo.toISOString();
+
+    // Get total count (within 30-day window)
     const { count, error: countError } = await supabase
       .from('submissions')
       .select('*', { count: 'exact', head: true })
-      .eq('student_id', auth.userId);
+      .eq('student_id', auth.userId)
+      .gte('created_at', cutoffDate);
 
     if (countError) {
-      console.error('Count error:', countError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
 
     const totalCount = count || 0;
 
-    // Fetch submissions (without text_encrypted for privacy)
+    // Fetch submissions with full details (within 30-day window)
     const { data: submissions, error: fetchError } = await supabase
       .from('submissions')
-      .select('id, sentiment, risk_level, dominant_emotion, confidence, created_at')
+      .select('id, text_encrypted, sentiment, risk_level, dominant_emotion, confidence, empathetic_message, bible_verse_reference, bible_verse_text, created_at')
       .eq('student_id', auth.userId)
+      .gte('created_at', cutoffDate)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (fetchError) {
-      console.error('Fetch error:', fetchError);
       sendError(res, 500, ErrorCode.DATABASE_ERROR);
       return;
     }
@@ -131,10 +134,14 @@ export default async function handler(
     // Transform to response format
     const historyItems: SubmissionHistoryItem[] = (submissions || []).map((sub) => ({
       id: sub.id,
+      text: sub.text_encrypted,
       sentiment: sub.sentiment as Sentiment,
       risk_level: sub.risk_level as RiskLevel,
       dominant_emotion: sub.dominant_emotion ?? null,
       confidence: sub.confidence,
+      empathetic_message: sub.empathetic_message ?? null,
+      bible_verse_reference: sub.bible_verse_reference ?? null,
+      bible_verse_text: sub.bible_verse_text ?? null,
       created_at: sub.created_at,
     }));
 
@@ -148,8 +155,7 @@ export default async function handler(
     };
 
     res.status(200).json(response);
-  } catch (error) {
-    console.error('Unexpected error in history handler:', error);
+  } catch {
     sendError(res, 500, ErrorCode.INTERNAL_SERVER_ERROR);
   }
 }

@@ -162,14 +162,11 @@ export default function Dashboard() {
   }, [])
 
   const firstName = useMemo(() => {
-    // Prefer first_name from Supabase user metadata, fall back to email prefix
     const first = user?.user_metadata?.first_name as string | undefined
     if (first) {
       return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
     }
-    const email = user?.email || ''
-    const name = email.split('@')[0] || ''
-    return name.charAt(0).toUpperCase() + name.slice(1)
+    return null
   }, [user])
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -248,7 +245,11 @@ export default function Dashboard() {
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/4" />
               <div className="relative">
                 <p className="text-white/70 text-sm font-medium mb-1">{greeting},</p>
-                <h2 className="font-display italic text-2xl sm:text-3xl mb-2">{firstName}</h2>
+                {firstName ? (
+                  <h2 className="font-display italic text-2xl sm:text-3xl mb-2">{firstName}</h2>
+                ) : (
+                  <div className="h-8 sm:h-9 w-32 bg-white/20 rounded animate-pulse mb-2" />
+                )}
                 <p className="text-white/80 text-sm max-w-md">
                   {stats.totalEntries === 0
                     ? "Welcome to MindSpace. Start your wellness journey by writing your first entry."

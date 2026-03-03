@@ -74,7 +74,7 @@ export default function Dashboard() {
 
     setDeletingId(id)
     try {
-      const res = await fetch(`/api/submissions/delete?id=${id}`, {
+      const res = await fetch(`/api/submissions?id=${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${session.access_token}` },
       })

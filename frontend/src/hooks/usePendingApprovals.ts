@@ -17,7 +17,7 @@ export function usePendingApprovals() {
         throw new Error('No session')
       }
 
-      const response = await fetch('/api/counselors/pending', {
+      const response = await fetch('/api/counselors', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -48,7 +48,7 @@ export function usePendingApprovals() {
         throw new Error('No session')
       }
 
-      const response = await fetch('/api/counselors/approve', {
+      const response = await fetch('/api/counselors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

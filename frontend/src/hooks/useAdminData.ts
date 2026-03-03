@@ -53,7 +53,7 @@ export function useAdminStats() {
         throw new Error('No session')
       }
 
-      const response = await fetch('/api/admin/stats', {
+      const response = await fetch('/api/admin?view=stats', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

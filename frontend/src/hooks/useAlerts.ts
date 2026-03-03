@@ -84,7 +84,7 @@ export function useAdminAlerts() {
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 
-      const response = await fetch('/api/admin/alerts', {
+      const response = await fetch('/api/admin?view=alerts', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
 

@@ -17,7 +17,7 @@ export function useSubmissionHistory(limit = 20, offset = 0) {
       }
 
       const response = await fetch(
-        `/api/submissions/history?limit=${limit}&offset=${offset}`,
+        `/api/submissions?limit=${limit}&offset=${offset}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,

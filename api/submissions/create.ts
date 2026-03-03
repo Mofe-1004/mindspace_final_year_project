@@ -18,11 +18,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { analyzeText } from '../lib/ml-service';
-import { generateResponsePackage } from '../lib/response-generator';
-import { selectVerse } from '../lib/verse-selector';
-import { validateTextQuality } from '../lib/gibberish-detector';
-import { createAtRiskAlert } from '../lib/alert-service';
+import { analyzeText } from '../_lib/ml-service';
+import { generateResponsePackage } from '../_lib/response-generator';
+import { selectVerse } from '../_lib/verse-selector';
+import { validateTextQuality } from '../_lib/gibberish-detector';
+import { createAtRiskAlert } from '../_lib/alert-service';
 import {
   CreateSubmissionResponse,
   ApiResponse,

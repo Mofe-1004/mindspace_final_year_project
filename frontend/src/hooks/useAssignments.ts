@@ -7,7 +7,7 @@ import { useAuth } from '../lib/AuthContext'
 import {
   GetAssignmentsResponse,
   CreateAssignmentResponse,
-} from '../../../types/shared'
+} from '../../../api/_types/shared'
 
 export function useAssignments() {
   const { session } = useAuth()

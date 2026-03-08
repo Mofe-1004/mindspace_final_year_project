@@ -4,7 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../lib/AuthContext'
-import { MyStudentsTrendsResponse } from '../../../types/shared'
+import { MyStudentsTrendsResponse } from '../../../api/_types/shared'
 
 export function useMyStudentsTrends(days: number = 7) {
   const { session } = useAuth()

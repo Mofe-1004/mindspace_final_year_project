@@ -10,7 +10,7 @@
  * This is a lightweight, fast approach that doesn't require ML.
  */
 
-import { Language } from '../../types/shared';
+import { Language } from '../_types/shared';
 
 /**
  * Common Nigerian Pidgin words and phrases

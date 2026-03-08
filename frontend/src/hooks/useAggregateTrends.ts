@@ -4,7 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../lib/AuthContext'
-import { GetAggregateTrendsResponse } from '../../../types/shared'
+import { GetAggregateTrendsResponse } from '../../../api/_types/shared'
 
 export function useAggregateTrends(startDate?: string, endDate?: string) {
   const { session } = useAuth()

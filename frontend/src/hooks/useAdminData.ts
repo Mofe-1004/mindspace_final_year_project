@@ -9,7 +9,7 @@ import {
   AdminStatsResponse,
   UpdateUserRoleResponse,
   UserRole,
-} from '../../../types/shared'
+} from '../../../api/_types/shared'
 
 export function useAdminUsers() {
   const { session } = useAuth()

@@ -26,7 +26,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card'
-import { UserRole, AdminUserItem, AssignmentWithDetails, AlertWithDetails } from '../../../types/shared'
+import { UserRole, AdminUserItem, AssignmentWithDetails, AlertWithDetails } from '../../../api/_types/shared'
 
 type Tab = 'overview' | 'users' | 'assignments' | 'alerts'
 

@@ -7,7 +7,7 @@
 
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
-import { UserRole } from '../../../types/shared'
+import { UserRole } from '../../../api/_types/shared'
 import { Loader2 } from 'lucide-react'
 
 interface RoleBasedRouteProps {

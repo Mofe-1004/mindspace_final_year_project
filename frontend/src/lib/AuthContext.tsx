@@ -9,7 +9,7 @@ import {
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import { isValidSchoolEmail, extractSchoolDomain, classifyDomain } from './utils'
-import { UserRole } from '../../../types/shared'
+import { UserRole } from '../../../api/_types/shared'
 
 interface AuthState {
   user: User | null
@@ -252,6 +252,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (!error && signUpData.user) {
+      // Supabase returns a fake user with empty identities when email already exists
+      // (to prevent email enumeration). Detect this and show a clear error.
+      if (signUpData.user.identities?.length === 0) {
+        return {
+          error: new Error('An account with this email already exists. Please sign in instead.'),
+        }
+      }
+
       // Create student record in the students table.
       // Use the user returned by signUp() directly — getUser() won't work
       // before email confirmation.

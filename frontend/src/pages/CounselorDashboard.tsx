@@ -34,7 +34,7 @@ import {
 } from '../components/ui/card'
 import SentimentPieChart from '../components/charts/SentimentPieChart'
 import RiskDistributionChart from '../components/charts/RiskDistributionChart'
-import { Sentiment } from '../../../types/shared'
+import { Sentiment } from '../../../api/_types/shared'
 
 type Tab = 'overview' | 'students' | 'alerts'
 

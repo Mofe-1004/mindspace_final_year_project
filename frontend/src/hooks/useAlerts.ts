@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../lib/AuthContext'
-import { GetAlertsResponse } from '../../../types/shared'
+import { GetAlertsResponse } from '../../../api/_types/shared'
 
 /** Hook for counselors to view/manage their alerts */
 export function useCounselorAlerts() {

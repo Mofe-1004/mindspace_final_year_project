@@ -11,7 +11,7 @@
  * - Varied responses to avoid repetition
  */
 
-import { Sentiment, RiskLevel, Language } from '../../types/shared';
+import { Sentiment, RiskLevel, Language } from '../_types/shared';
 
 /**
  * Template structure for empathetic messages

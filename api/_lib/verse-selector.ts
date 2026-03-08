@@ -21,7 +21,7 @@ import {
   BibleVerseSentimentMatch,
   BibleVerseCategory,
   getBibleVerseCategory
-} from '../../types/shared';
+} from '../_types/shared';
 
 // Initialize Supabase client for server-side use
 let supabase: SupabaseClient | null = null;

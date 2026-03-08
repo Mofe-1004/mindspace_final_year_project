@@ -10,7 +10,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ApiResponse, ErrorCode, ErrorMessages, UserRole } from '../../types/shared';
+import { ApiResponse, ErrorCode, ErrorMessages, UserRole } from '../_types/shared';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,

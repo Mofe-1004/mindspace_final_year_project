@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import { SubmissionHistoryItem, Sentiment } from '../../../../types/shared'
+import { SubmissionHistoryItem, Sentiment } from '../../../../api/_types/shared'
 
 interface SentimentTrendChartProps {
   submissions: SubmissionHistoryItem[]

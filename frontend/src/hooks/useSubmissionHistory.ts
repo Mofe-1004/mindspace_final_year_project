@@ -4,7 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../lib/AuthContext'
-import { GetSubmissionHistoryResponse } from '../../../types/shared'
+import { GetSubmissionHistoryResponse } from '../../../api/_types/shared'
 
 export function useSubmissionHistory(limit = 20, offset = 0) {
   const { session } = useAuth()

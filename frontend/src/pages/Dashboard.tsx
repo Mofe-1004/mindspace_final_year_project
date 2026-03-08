@@ -13,7 +13,7 @@ import {
 import SubmissionForm from '../components/SubmissionForm'
 import SubmissionResult from '../components/SubmissionResult'
 import SentimentTrendChart from '../components/charts/SentimentTrendChart'
-import { CreateSubmissionResponse, Sentiment, SubmissionHistoryItem } from '../../../types/shared'
+import { CreateSubmissionResponse, Sentiment, SubmissionHistoryItem } from '../../../api/_types/shared'
 
 // Map raw GoEmotions labels to human-friendly display names
 const EMOTION_DISPLAY: Record<string, string> = {

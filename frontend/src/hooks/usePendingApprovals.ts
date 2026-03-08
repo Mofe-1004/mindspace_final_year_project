@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../lib/AuthContext'
-import { GetPendingApprovalsResponse, ApproveCounselorResponse } from '../../../types/shared'
+import { GetPendingApprovalsResponse, ApproveCounselorResponse } from '../../../api/_types/shared'
 
 export function usePendingApprovals() {
   const { session } = useAuth()

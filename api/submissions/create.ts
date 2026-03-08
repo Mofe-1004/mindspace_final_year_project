@@ -29,7 +29,7 @@ import {
   ErrorCode,
   ErrorMessages,
   VALIDATION_RULES,
-} from '../../types/shared';
+} from '../_types/shared';
 
 // Initialize Supabase client with service role for server-side operations
 const supabase = createClient(

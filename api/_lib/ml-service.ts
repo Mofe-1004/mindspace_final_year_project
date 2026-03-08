@@ -11,7 +11,7 @@ import {
   Sentiment,
   RiskLevel,
   MLAnalysisResult
-} from '../../types/shared';
+} from '../_types/shared';
 import { detectLanguage } from './language-detector';
 
 // Working model identifiers (tested and confirmed on HuggingFace Inference Providers)

@@ -21,7 +21,7 @@ import {
   CardContent,
 } from './ui/card'
 import { useAuth } from '../lib/AuthContext'
-import { CreateSubmissionResponse } from '../../../types/shared'
+import { CreateSubmissionResponse } from '../../../api/_types/shared'
 
 // Validation constants (matching backend)
 const MIN_LENGTH = 10

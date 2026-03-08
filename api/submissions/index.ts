@@ -16,7 +16,7 @@ import {
   ErrorMessages,
   Sentiment,
   RiskLevel,
-} from '../../types/shared';
+} from '../_types/shared';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,

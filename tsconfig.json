@@ -25,9 +25,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./frontend/src/*"],
-      "@/types/*": ["./types/*"]
+      "@/types/*": ["./api/_types/*"]
     }
   },
-  "include": ["frontend/src", "api", "types"],
+  "include": ["frontend/src", "api"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -14,7 +14,7 @@ import { BookOpen, MessageCircle, X, ChevronDown, ChevronUp } from 'lucide-react
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
 import { Card, CardContent } from './ui/card'
-import { CreateSubmissionResponse } from '../../../types/shared'
+import { CreateSubmissionResponse } from '../../../api/_types/shared'
 
 interface SubmissionResultProps {
   result: CreateSubmissionResponse

@@ -8,11 +8,11 @@ import { GetAlertsResponse } from '../../../types/shared'
 
 /** Hook for counselors to view/manage their alerts */
 export function useCounselorAlerts() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
   const queryClient = useQueryClient()
 
   const query = useQuery<GetAlertsResponse>({
-    queryKey: ['counselor', 'alerts'],
+    queryKey: ['counselor', 'alerts', user?.id],
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 
@@ -77,10 +77,10 @@ export function useCounselorAlerts() {
 
 /** Hook for admins to view all system alerts */
 export function useAdminAlerts() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<GetAlertsResponse>({
-    queryKey: ['admin', 'alerts'],
+    queryKey: ['admin', 'alerts', user?.id],
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 

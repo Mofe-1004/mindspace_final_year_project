@@ -62,6 +62,34 @@ const PIDGIN_TRANSLATIONS: Record<string, string> = {
   'body no dey': "i don't feel well",
   'my body no correct': "i don't feel well",
 
+  // Completive aspect "don" = "has/have done" (very common in Pidgin)
+  // Must appear BEFORE the short 'don' fallback so longer phrases match first
+  'i don tire for this life': 'i am completely exhausted with life',
+  'i don tire for life': 'i am completely exhausted with life',
+  'i don tire': 'i am completely exhausted',
+  'e no work out': 'it does not work out',
+  'nothing dey work': 'nothing is working',
+  'nothing dey work out': 'nothing is working out',
+  'God don do am': 'God has done it',
+  'God don answer': 'God has answered',
+  'God don come through': 'God has come through',
+  'e don happen': 'it has happened',
+  'e don work out': 'it has worked out',
+  'don do am': 'has done it',
+  'don pass': 'has passed',
+  'don finish': 'has finished',
+  'don scale through': 'has scaled through',
+  'don happen': 'has happened',
+  'don dey': 'has been',
+  'don get': 'has gotten',
+  'don try': 'has tried',
+  'don win': 'has won',
+  'i don pass': 'i have passed',
+  'i don finish': 'i have finished',
+  'i don do am': 'i have done it',
+  'i don try': 'i have tried',
+  'don': 'has',          // Short fallback — catches any remaining "don" after longer phrases
+
   // Positive expressions
   'i dey okay': 'i am okay',
   'i dey fine': 'i am fine',
@@ -70,11 +98,24 @@ const PIDGIN_TRANSLATIONS: Record<string, string> = {
   'i dey happy': 'i am happy',
   'e sweet me': 'it makes me happy',
   'i dey grateful': 'i am grateful',
+  'e don work': 'it has worked',
+  'e don better': 'it has gotten better',
   'God dey': 'God is present',
   'we move': "let's move forward",
   'we dey move': 'we are moving forward',
   'e go better': 'it will get better',
   'na small thing': "it's a small thing",
+
+  // Emphasis / intensifiers
+  'well well': 'very well',
+  'die die': 'very much',
+  'sotey': 'so much that',
+  'reach': 'reached',
+
+  // Achievement expressions
+  'scale through': 'succeeded',
+  'pass my': 'passed my',
+  'pass the': 'passed the',
 
   // Transitive fear/scare patterns ("dey [verb] me" where subject is external)
   'dey fear me': 'scares me',
@@ -104,12 +145,14 @@ const PIDGIN_TRANSLATIONS: Record<string, string> = {
   'dem': 'they/them',
   'una': 'you all',
   'wey': 'that/which',
-  'for': 'in/at',
+  // NOTE: 'for' intentionally NOT mapped — it is valid English and mapping it to 'in/at'
+  // breaks sentences like "God don do am for me" → "God has done it for me"
   'chop': 'eat',
   'gist': 'talk/story',
   'japa': 'run away/escape',
   'sabi': 'know',
   'shege': 'trouble/suffering',
+  'do am': 'did it',
 };
 
 /**
@@ -261,6 +304,32 @@ const CRISIS_PHRASES = [
   'can\'t go on', 'cant go on', 'can\'t take it anymore', 'cant take it anymore',
   'no way out', 'give up on life', 'nothing to live for',
   'suicide', 'suicidal',
+  // "no reason to continue" family — matches "don't see any reason to continue" etc.
+  'no reason to continue', 'don\'t see any reason to continue',
+  'dont see any reason to continue', 'see no reason to continue',
+  'no reason to keep going', 'no reason to go on', 'no point to continue',
+  'no point in continuing', 'no point going on', 'no point carrying on',
+  'don\'t see the point anymore', 'dont see the point anymore',
+  'what\'s the point anymore', 'whats the point anymore',
+  // "burden" phrases — clinically documented suicidal ideation marker
+  'feel like a burden', 'feeling like a burden', 'i am a burden',
+  'i\'m a burden', 'im a burden', 'i am just a burden',
+  'burden to everyone', 'burden to my family', 'burden to my friends',
+  'burden to the people', 'everyone would be better without me',
+  'better off without me', 'world would be better without me',
+  'people would be better off without me', 'everyone is better without me',
+  // Pidgin burden equivalents
+  'i be burden', 'i dey burden everybody', 'i be problem for everyone',
+  'dem go better without me', 'everyone go better without me',
+  // "tired of fighting / struggling" — passive ideation
+  'tired of fighting', 'tired of the fight', 'tired of struggling',
+  'tired of trying', 'tired of holding on', 'tired of pretending',
+  'tired of being strong', 'tired of carrying on', 'exhausted from fighting',
+  'can\'t fight anymore', 'cant fight anymore', 'done fighting',
+  'given up fighting', 'no strength to fight', 'lost the will to fight',
+  // Pidgin tired-of-fighting equivalents
+  'i don tire to fight', 'i tire to dey struggle', 'no strength remain',
+  'i don give up', 'i don lose hope completely',
   // English — indirect crisis language ("feel like dying", self-harm)
   'feel like dying', 'feels like dying', 'like dying', 'rather be dead', 'rather die',
   'ready to die', 'want to disappear', 'wanna disappear',
@@ -268,10 +337,30 @@ const CRISIS_PHRASES = [
   'don\'t want to wake up', 'dont want to wake up',
   'don\'t want to live', 'dont want to live', 'tired of living',
   'life is not worth it', 'life isn\'t worth it', 'life isnt worth it',
+  // English — passive suicidal ideation ("rest from everything" = wanting to stop existing)
+  // These are indirect but clinically recognised crisis expressions
+  'want to rest from everything', 'wanna rest from everything',
+  'just want to rest from everything', 'just wanna rest from everything',
+  'want rest from everything', 'need rest from everything',
+  'rest from this life', 'rest from life', 'rest from it all',
+  'want to escape everything', 'wanna escape everything', 'escape from everything',
+  'just want to disappear', 'just wanna disappear',
+  'tired of everything', 'tired of this life', 'tired of living this life',
+  'exhausted from living', 'done with life', 'done with everything',
+  'want it all to stop', 'want everything to stop', 'make it all stop',
   // Nigerian Pidgin
   'i wan die', 'i want die', 'make i die', 'i go kill myself',
   'no reason to dey alive', 'life no worth am', 'i no wan live again',
-  'i no fit continue', 'wetin be the point', 'i don tire for life',
+  'i no fit continue', 'wetin be the point',
+  // "don tire for life" variants — must cover "this life", "this kind life" etc.
+  'i don tire for life', 'i don tire for this life', 'i don tire for this kind life',
+  'i dey tire for life', 'i dey tire for this life',
+  'i tire for life', 'i tire for this life',
+  // Passive rest/escape in Pidgin
+  'i just wan rest from everything', 'i wan rest from everything',
+  'i wan rest from this life', 'i wan rest from life',
+  'i wan comot from this life', 'i wan escape from everything',
+  'i don tire for everything', 'everything don tire me',
   'i wan end am', 'nothing dey for me again',
   'e be like say i wan die', 'i dey feel like to die', 'i no wan dey here again',
 ];
@@ -358,6 +447,63 @@ function detectConcernLanguage(text: string): { detected: boolean; type: Concern
 }
 
 /**
+ * Bereavement keyword detection
+ *
+ * GoEmotions returns `sadness` (MODERATE risk) for loss/grief text instead of
+ * `grief` (HIGH risk) because it reserves the grief label for very explicit
+ * expressions. These phrases catch bereavement scenarios the model misses.
+ *
+ * Two-factor: only fires when BOTH a loss phrase AND a suffering/persistence
+ * phrase are present — this avoids flagging "I lost my phone" as HIGH risk.
+ */
+const BEREAVEMENT_LOSS_PHRASES = [
+  // Death of a person
+  'passed away', 'passed on', 'died', 'death of', 'lost their life',
+  'gone forever', 'no longer here', 'no longer with us', 'taken from me',
+  // Loss of a close relationship (death or disappearance)
+  'lost my friend', 'lost my closest friend', 'lost my best friend',
+  'lost my mother', 'lost my father', 'lost my mum', 'lost my dad',
+  'lost my brother', 'lost my sister', 'lost my parent', 'lost my parents',
+  'lost my child', 'lost my baby', 'lost my partner', 'lost my husband',
+  'lost my wife', 'lost my boyfriend', 'lost my girlfriend',
+  'lost my grandmother', 'lost my grandfather', 'lost my grandma', 'lost my grandpa',
+  'lost someone', 'lost a friend', 'lost a loved one',
+  // Pidgin variants
+  'my person don go', 'dem don take am', 'e don die', 'e don pass on',
+  'i lose my friend', 'i don lose my', 'dem don go forever',
+];
+
+const BEREAVEMENT_SUFFERING_PHRASES = [
+  // Persistent / unresolved pain
+  'pain does not go away', 'pain won\'t go away', 'pain doesn\'t go away',
+  'pain is still there', 'pain never goes away', 'still in pain',
+  'cannot stop thinking about', 'can\'t stop thinking about',
+  'cant stop thinking about', 'keep thinking about them', 'keep thinking about him',
+  'keep thinking about her', 'always on my mind', 'miss them so much',
+  'miss him so much', 'miss her so much', 'miss them every day',
+  // Grief responses
+  'cannot accept', 'can\'t accept', 'cant accept', 'hard to accept',
+  'hard to move on', 'cannot move on', 'can\'t move on', 'cant move on',
+  'not the same without', 'life is not the same', 'nothing is the same',
+  'broken without', 'empty without', 'lost without them',
+  // Pidgin variants
+  'i no fit stop think about', 'e dey pain me well well', 'pain no dey go',
+  'i miss am die', 'i miss them die',
+];
+
+/**
+ * Detects bereavement language by requiring BOTH a loss phrase AND a suffering
+ * phrase — prevents false positives on e.g. "I lost my keys".
+ */
+function detectBereavementLanguage(text: string): boolean {
+  const lower = text.toLowerCase();
+  const hasLoss = BEREAVEMENT_LOSS_PHRASES.some(phrase => lower.includes(phrase));
+  if (!hasLoss) return false;
+  const hasSuffering = BEREAVEMENT_SUFFERING_PHRASES.some(phrase => lower.includes(phrase));
+  return hasSuffering;
+}
+
+/**
  * Risk-related emotions from GoEmotions
  * Grouped by severity for risk assessment
  *
@@ -391,6 +537,20 @@ function mapEmotionsToRiskLevel(
       score: 1.0,
       dominantEmotion: topLabel,
       hasConcernLanguage: false, // crisis overrides concern
+      concernType: null,
+    };
+  }
+
+  // Bereavement override — GoEmotions returns `sadness` (MODERATE) for loss text
+  // instead of `grief` (HIGH). When two-factor bereavement is detected (loss phrase
+  // + persistent suffering phrase), force grief/HIGH so counselors are alerted
+  // and an appropriate at_risk verse pool is used.
+  if (originalText && detectBereavementLanguage(originalText)) {
+    return {
+      riskLevel: RiskLevel.HIGH,
+      score: 0.9,
+      dominantEmotion: 'grief',
+      hasConcernLanguage: false,
       concernType: null,
     };
   }
@@ -562,6 +722,50 @@ export async function analyzeText(text: string): Promise<MLAnalysisResult> {
     if (NEGATIVE_EMOTION_OVERRIDE.includes(topEmotion.label.toLowerCase()) && topEmotion.score >= 0.6) {
       sentimentResult.sentiment = Sentiment.NEGATIVE;
       sentimentResult.score = topEmotion.score * 0.8; // Scale to avoid overconfidence
+    }
+  }
+
+  // Step 4b: Negative keyword safety net
+  // Last-resort override for when Cardiff returns NEUTRAL on text that is clearly negative.
+  // Cardiff is trained on tweets and can miss first-person declarative distress
+  // (e.g. "I failed my exam. I feel so ashamed.") — it expects emotional punctuation/caps.
+  // This check is intentionally conservative: only fires when Cardiff said NEUTRAL,
+  // not when it already said NEGATIVE (that would undo a correct negative result).
+  const NEGATIVE_SIGNAL_PHRASES = [
+    // Failure & academic distress
+    'i failed', 'failed my', 'failed the', 'failed again', 'i keep failing',
+    'i couldn\'t pass', 'i didn\'t pass', 'didn\'t make it',
+    // Shame & self-criticism
+    'ashamed of myself', 'ashamed of me', 'feel ashamed', 'so ashamed',
+    'embarrassed about myself', 'hate myself', 'hate my life',
+    'feel worthless', 'feel useless', 'feel stupid', 'feel like a failure',
+    'i\'m a failure', 'i am a failure', 'i\'m such a failure',
+    // Disappointment (self-directed)
+    'let down', 'let myself down', 'disappointed in myself', 'disappointed with myself',
+    'i feel so bad', 'feel really bad', 'feel terrible', 'feel horrible', 'feel awful',
+    // Guilt
+    'feel guilty', 'feel so guilty', 'blame myself', 'it\'s my fault', 'my fault',
+    // General distress
+    'so upset', 'feeling hopeless', 'feel hopeless', 'feel lost',
+    'i\'m struggling', 'i am struggling', 'can\'t cope', 'cannot cope',
+    // Futility / nothing working out
+    'nothing works out', 'nothing ever works out', 'nothing i do works',
+    'everything goes wrong', 'everything is going wrong', 'always goes wrong',
+    'nothing is going right', 'nothing goes right', 'tired of trying',
+    'no matter what i do', 'no matter how hard i try',
+    // Pidgin futility
+    'e no work out', 'nothing dey work', 'everything dey go wrong',
+    'i don tire', 'i dey tire for this',
+    // Pidgin versions
+    'i fail', 'i don fail', 'i shame', 'i dey shame', 'i feel bad',
+    'e pain me', 'my fault', 'i blame myself',
+  ];
+  if (sentimentResult.sentiment === Sentiment.NEUTRAL) {
+    const lowerText = processedText.toLowerCase();
+    const hasNegativeSignal = NEGATIVE_SIGNAL_PHRASES.some(phrase => lowerText.includes(phrase));
+    if (hasNegativeSignal) {
+      sentimentResult.sentiment = Sentiment.NEGATIVE;
+      sentimentResult.score = 0.65; // Moderate confidence — keyword match, not model
     }
   }
 

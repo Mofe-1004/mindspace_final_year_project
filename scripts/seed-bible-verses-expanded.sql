@@ -28,7 +28,6 @@ VALUES
 ('Ecclesiastes 3:12-13', 'I know that there is nothing better for people than to be happy and to do good while they live. That each of them may eat and drink, and find satisfaction in all their toil—this is the gift of God.', 'positive', 'english'),
 ('Psalm 68:3', 'But may the righteous be glad and rejoice before God; may they be happy and joyful.', 'positive', 'english'),
 ('Isaiah 12:2', 'Surely God is my salvation; I will trust and not be afraid. The Lord, the Lord himself, is my strength and my defense; he has become my salvation.', 'positive', 'english'),
-('Zephaniah 3:17', 'The Lord your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing.', 'positive', 'english'),
 ('Psalm 37:4', 'Take delight in the Lord, and he will give you the desires of your heart.', 'positive', 'english'),
 ('Habakkuk 3:18', 'Yet I will rejoice in the Lord, I will be joyful in God my Savior.', 'positive', 'english')
 ON CONFLICT DO NOTHING;

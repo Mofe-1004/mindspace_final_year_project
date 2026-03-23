@@ -25,11 +25,20 @@ export const PIDGIN_MARKERS = [
   'carry go', 'no wahala', 'no vex', 'how far', 'wehdone',
   'e be like', 'make i', 'weda', 'beta', 'berra', 'helep',
 
+  // Completive aspect "don" — one of the most distinctive Pidgin markers
+  // e.g. "God don do am", "I don pass", "e don happen"
+  'don do', 'don pass', 'don finish', 'don happen', 'don try',
+  'i don', 'e don', 'we don', 'dem don', 'she don', 'he don',
+
+  // Pidgin intensifier
+  'well well',
+
   // Pidgin expressions
   'i no fit', 'e no easy', 'no be small', 'body no be firewood',
   'i tire', 'e tire me', 'my head dey pain', 'i no understand',
   'wetin dey happen', 'how body', 'i dey', 'e dey', 'we dey',
   'i wan', 'make we', 'no go', 'go come', 'e no get',
+  'scale through', 'do am',
 
   // Emotional expressions in Pidgin
   'i dey fear', 'i dey worry', 'my heart dey pain', 'i no happy',

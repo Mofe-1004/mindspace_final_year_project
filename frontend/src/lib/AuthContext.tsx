@@ -313,7 +313,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
-    // 1. Immediately clear React auth state so the UI reacts instantly.
+    // 1. Clear React Query cache to prevent showing old user's data to new user
+    try {
+      // Dynamic import to avoid circular dependency
+      const { queryClient } = await import('../main')
+      queryClient.clear() // Clears all cached queries
+    } catch {
+      // If import fails, continue with logout
+    }
+
+    // 2. Immediately clear React auth state so the UI reacts instantly.
     setState({
       user: null,
       session: null,
@@ -321,7 +330,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: false,
       role: null,
     })
-    // 2. Tell Supabase to clear its localStorage session.
+
+    // 3. Tell Supabase to clear its localStorage session.
     //    Use local scope to avoid a network call that can hang.
     //    Wrapped in try/catch so sign-out never fails from the user's perspective.
     try {

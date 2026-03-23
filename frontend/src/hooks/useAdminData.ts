@@ -12,10 +12,10 @@ import {
 } from '../../../types/shared'
 
 export function useAdminUsers() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<GetAdminUsersResponse>({
-    queryKey: ['admin', 'users'],
+    queryKey: ['admin', 'users', user?.id],
     queryFn: async () => {
       if (!session?.access_token) {
         throw new Error('No session')
@@ -44,10 +44,10 @@ export function useAdminUsers() {
 }
 
 export function useAdminStats() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<AdminStatsResponse>({
-    queryKey: ['admin', 'stats'],
+    queryKey: ['admin', 'stats', user?.id],
     queryFn: async () => {
       if (!session?.access_token) {
         throw new Error('No session')

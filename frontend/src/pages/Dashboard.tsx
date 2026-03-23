@@ -26,7 +26,7 @@ const EMOTION_DISPLAY: Record<string, string> = {
   remorse: 'Remorseful',
   anger: 'Frustrated',
   annoyance: 'Unsettled',
-  embarrassment: 'Embarrassed',
+  embarrassment: 'Ashamed',
   curiosity: 'Curious',
   neutral: 'Steady',
   optimism: 'Hopeful',
@@ -41,6 +41,12 @@ const EMOTION_DISPLAY: Record<string, string> = {
   caring: 'Caring',
   crisis: 'Distressed',
   unknown: 'Uncertain',
+  approval: 'Content',
+  disapproval: 'Unsettled',
+  desire: 'Longing',
+  surprise: 'Surprised',
+  realization: 'Reflective',
+  disgust: 'Troubled',
 }
 
 function formatEmotion(emotion: string | null | undefined): string {

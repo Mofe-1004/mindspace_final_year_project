@@ -10,11 +10,11 @@ import {
 } from '../../../types/shared'
 
 export function useAssignments() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
   const queryClient = useQueryClient()
 
   const query = useQuery<GetAssignmentsResponse>({
-    queryKey: ['admin', 'assignments'],
+    queryKey: ['admin', 'assignments', user?.id],
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 

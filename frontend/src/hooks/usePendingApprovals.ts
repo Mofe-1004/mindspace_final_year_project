@@ -7,11 +7,11 @@ import { useAuth } from '../lib/AuthContext'
 import { GetPendingApprovalsResponse, ApproveCounselorResponse } from '../../../types/shared'
 
 export function usePendingApprovals() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
   const queryClient = useQueryClient()
 
   const query = useQuery<GetPendingApprovalsResponse>({
-    queryKey: ['counselors', 'pending'],
+    queryKey: ['counselors', 'pending', user?.id],
     queryFn: async () => {
       if (!session?.access_token) {
         throw new Error('No session')

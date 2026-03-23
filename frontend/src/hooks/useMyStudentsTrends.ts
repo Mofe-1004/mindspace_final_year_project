@@ -7,10 +7,10 @@ import { useAuth } from '../lib/AuthContext'
 import { MyStudentsTrendsResponse } from '../../../types/shared'
 
 export function useMyStudentsTrends(days: number = 7) {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<MyStudentsTrendsResponse>({
-    queryKey: ['counselor', 'my-students', days],
+    queryKey: ['counselor', 'my-students', user?.id, days],
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 

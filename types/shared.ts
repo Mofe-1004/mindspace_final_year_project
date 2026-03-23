@@ -575,6 +575,17 @@ export type BibleVerseCategory =
 // Emotions that indicate anger/conflict (from GoEmotions labels)
 const ANGRY_EMOTIONS = ['anger', 'annoyance', 'disapproval', 'disgust'];
 
+// Positive-leaning emotions that should use the positive verse pool
+// even when the ML sentiment model returns "neutral".
+// These emotions represent contentment, relief, or satisfaction—
+// which Cardiff RoBERTa often misses in mild or matter-of-fact statements.
+// NOTE: 'unknown' is intentionally excluded — unknown means GoEmotions failed,
+// so we have no positive signal to justify upgrading to the positive pool.
+const POSITIVE_LEANING_EMOTIONS = [
+  'approval', 'relief', 'amusement', 'admiration', 'caring',
+  'pride', 'excitement', 'gratitude', 'joy', 'love', 'optimism',
+];
+
 // Determine Bible verse category based on sentiment, risk level, dominant emotion,
 // and whether concern language (addiction, abuse, etc.) was detected.
 export function getBibleVerseCategory(
@@ -606,6 +617,13 @@ export function getBibleVerseCategory(
   }
 
   if (sentiment === Sentiment.POSITIVE) {
+    return 'positive';
+  }
+
+  // Neutral sentiment: if the dominant emotion is genuinely positive (relief, approval,
+  // contentment, etc.) upgrade to the positive verse pool rather than giving a generic
+  // encouragement verse. This handles mild positive statements that Cardiff classifies as neutral.
+  if (dominantEmotion && POSITIVE_LEANING_EMOTIONS.includes(dominantEmotion.toLowerCase())) {
     return 'positive';
   }
 

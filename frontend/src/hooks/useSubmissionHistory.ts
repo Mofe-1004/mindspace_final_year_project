@@ -7,10 +7,10 @@ import { useAuth } from '../lib/AuthContext'
 import { GetSubmissionHistoryResponse } from '../../../types/shared'
 
 export function useSubmissionHistory(limit = 20, offset = 0) {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<GetSubmissionHistoryResponse>({
-    queryKey: ['submissions', 'history', limit, offset],
+    queryKey: ['submissions', 'history', user?.id, limit, offset],
     queryFn: async () => {
       if (!session?.access_token) {
         throw new Error('No session')

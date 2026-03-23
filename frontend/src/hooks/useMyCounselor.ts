@@ -17,10 +17,10 @@ interface MyCounselorResponse {
 }
 
 export function useMyCounselor() {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<MyCounselorResponse>({
-    queryKey: ['my-counselor'],
+    queryKey: ['my-counselor', user?.id],
     queryFn: async () => {
       if (!session?.access_token) throw new Error('No session')
 

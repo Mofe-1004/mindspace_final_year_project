@@ -7,10 +7,10 @@ import { useAuth } from '../lib/AuthContext'
 import { GetAggregateTrendsResponse } from '../../../types/shared'
 
 export function useAggregateTrends(startDate?: string, endDate?: string) {
-  const { session } = useAuth()
+  const { session, user } = useAuth()
 
   return useQuery<GetAggregateTrendsResponse>({
-    queryKey: ['trends', 'aggregate', startDate, endDate],
+    queryKey: ['trends', 'aggregate', user?.id, startDate, endDate],
     queryFn: async () => {
       if (!session?.access_token) {
         throw new Error('No session')

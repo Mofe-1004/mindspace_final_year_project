@@ -6,7 +6,8 @@ import App from './App'
 import { AuthProvider } from './lib/AuthContext'
 import './index.css'
 
-const queryClient = new QueryClient({
+// Export queryClient so AuthContext can clear cache on logout
+export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
